@@ -7,6 +7,8 @@
  * - 导入用主密码验证后才覆盖,且验证失败不改动本机数据(由 core 保证)。
  */
 
+import { wipeAllStorage } from '../../utils/platform.mjs';
+
 var appInstance = getApp<any>();
 
 Page({
@@ -206,9 +208,11 @@ Page({
           success: async (finalRes) => {
             if (!finalRes.confirm) return;
             try {
-              const keys = ['aegis.vault.v1', 'aegis.lock.v1', 'aegis.device.id.v1'];
-              for (const key of keys) wx.removeStorageSync(key);
-              wx.showToast({ title: '已清空', icon: 'success' });
+              // 按命名空间前缀全清,含登录态(session 族)。
+              // 早先这里硬编码三个键,漏掉了 session 与 device.name——
+              // 用户以为清空了,refreshToken 其实还在 storage 里。
+              const removed = wipeAllStorage();
+              wx.showToast({ title: `已清空 ${removed} 项`, icon: 'none' });
               setTimeout(() => wx.reLaunch({ url: '/pages/gate/index' }), 800);
             } catch (error) {
               wx.showToast({ title: '清空失败', icon: 'none' });

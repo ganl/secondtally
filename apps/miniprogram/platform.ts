@@ -94,8 +94,66 @@ export function createCryptoRandom(): CryptoRandom {
   };
 }
 
-const DEVICE_KEY = 'aegis.device.id.v1';
-const DEVICE_NAME_KEY = 'aegis.device.name.v1';
+/**
+ * 存储键的命名空间。
+ *
+ * 全部键都以此开头,"清空本机数据"按此前缀全清。
+ *
+ * 为什么用前缀而不是逐个列举键名:这个应用有六族键
+ * (vault / lock / device.id / device.name / session.*),
+ * 手工列举必然漏——漏掉 refreshToken 所在的 session 族,
+ * 用户以为清空了,登录态其实还在。
+ * 前缀匹配让"新增一个键"不再需要同步维护清空列表。
+ */
+export const STORAGE_NAMESPACE = 'aegis.';
+
+/** 会话键:按账户名分桶,存的是登录态(含 refreshToken)。 */
+const SESSION_KEY_PREFIX = `${STORAGE_NAMESPACE}session.`;
+
+/** 稳定设备标识与展示名的键。 */
+const DEVICE_KEY = `${STORAGE_NAMESPACE}device.id.v1`;
+const DEVICE_NAME_KEY = `${STORAGE_NAMESPACE}device.name.v1`;
+
+/**
+ * 清空本机全部应用数据。
+ *
+ * 按命名空间前缀全清,而不是列举已知键——
+ * 键会随功能增加,列举式清空迟早漏项。
+ * 漏掉 session 族的后果是:用户点了"清空",但 refreshToken
+ * 仍在 wx.storage 里,登录态没被真正清掉。
+ *
+ * 返回被删除的键数,便于调用方如实告知用户。
+ */
+export function wipeAllStorage(): number {
+  let removed = 0;
+  let keys: string[] = [];
+  try {
+    // getStorageInfoSync().keys 列出本小程序写入的全部键。
+    keys = (wx.getStorageInfoSync?.().keys ?? []) as string[];
+  } catch {
+    // 拿不到清单时退回已知键,尽最大努力清。
+  }
+  const targets = new Set<string>(keys.filter((k) => k.startsWith(STORAGE_NAMESPACE)));
+  // 兜底:即使清单拿不到,这四个键也必须清掉。
+  targets.add(`${STORAGE_NAMESPACE}vault.v1`);
+  targets.add(`${STORAGE_NAMESPACE}lock.v1`);
+  targets.add(DEVICE_KEY);
+  targets.add(DEVICE_NAME_KEY);
+  for (const key of targets) {
+    try {
+      wx.removeStorageSync(key);
+      removed += 1;
+    } catch {
+      /* 单个键失败不应中断整体清理 */
+    }
+  }
+  return removed;
+}
+
+/** 当前登录态对应的存储键。 */
+export function sessionKey(accountName: string): string {
+  return `${SESSION_KEY_PREFIX}${accountName}`;
+}
 
 /**
  * 稳定的设备标识。

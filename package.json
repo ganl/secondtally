@@ -12,10 +12,11 @@
   ],
   "scripts": {
     "build:core": "node scripts/build-core.mjs",
+    "build:miniprogram": "node scripts/build-miniprogram.mjs",
     "build:web": "node scripts/build-web.mjs",
     "build:ext": "node scripts/build-ext.mjs",
     "build:server": "cd server-go && go build -o dist/aegis-server ./cmd/aegis-server",
-    "build": "npm run build:core && npm run build:web && npm run build:ext && npm run build:server",
+    "build": "npm run build:core && npm run build:miniprogram && npm run build:web && npm run build:ext && npm run build:server",
     "test": "node --test packages/core/test/*.test.mjs apps/extension/test/*.test.mjs",
     "test:server": "cd server-go && go test ./... -count=1",
     "typecheck": "tsc -p packages/core/tsconfig.json --noEmit && tsc -p apps/miniprogram/tsconfig.json --noEmit",

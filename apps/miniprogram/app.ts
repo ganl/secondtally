@@ -14,6 +14,7 @@ import {
   createCryptoRandom,
   ensureDeviceId,
   ensureDeviceName,
+  sessionKey,
   TimeSource,
 } from './utils/platform.mjs';
 
@@ -80,19 +81,21 @@ App({
     const transport = new HttpSyncTransport({
       baseUrl: SYNC_BASE_URL,
       userId: accountName,
+      // 会话键由 platform 统一生成,不在这里拼字符串——
+      // 键名散落在两处时,改名必漏其中之一。
       loadSession: () => {
         try {
-          const raw = wx.getStorageSync(`aegis.session.${accountName}`);
+          const raw = wx.getStorageSync(sessionKey(accountName));
           return raw ? JSON.parse(raw) : null;
         } catch {
           return null;
         }
       },
       saveSession: (session) => {
-        wx.setStorageSync(`aegis.session.${accountName}`, JSON.stringify(session));
+        wx.setStorageSync(sessionKey(accountName), JSON.stringify(session));
       },
       clearSession: () => {
-        wx.removeStorageSync(`aegis.session.${accountName}`);
+        wx.removeStorageSync(sessionKey(accountName));
       },
       onSessionExpired: () => {
         wx.showToast({ title: '同步登录已过期', icon: 'none' });
