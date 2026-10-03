@@ -1,0 +1,31 @@
+<view class="page">
+  <view class="hero">
+    <view class="title">添加账号</view>
+    <view class="desc">选择一种方式导入你的双重认证账号</view>
+  </view>
+
+  <view class="action-card" bindtap="onScan">
+    <view class="action-icon">▣</view>
+    <view class="action-title">扫描二维码</view>
+    <view class="action-desc">大多数网站在设置安全时都会显示二维码,用相机扫它即可</view>
+  </view>
+
+  <view class="action-card" bindtap="onMigrate">
+    <view class="action-icon">⇄</view>
+    <view class="action-title">从 Google Authenticator 迁移</view>
+    <view class="action-desc">一次性导入全部账号,无需逐个重扫</view>
+  </view>
+
+  <view class="action-card" bindtap="goManual">
+    <view class="action-icon">⌨</view>
+    <view class="action-title">手动输入种子</view>
+    <view class="action-desc">没有二维码时,输入服务方提供的 Base32 密钥</view>
+  </view>
+
+  <view class="section-title">安全提示</view>
+  <view class="tip">
+    · 种子等同于账号的第二把钥匙。请勿截图、发送给任何人,也不要提交到代码仓库。\n
+    · 正规网站只会把二维码展示在它自己的域名下。若二维码来自陌生链接,请先确认来源。\n
+    · 本应用不会联网获取任何账号信息,所有解析都在你的手机上完成。
+  </view>
+</view>

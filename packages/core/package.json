@@ -1,0 +1,27 @@
+{
+  "name": "@aegis/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "端到端加密的 TOTP 引擎,无平台依赖,供小程序 / Web / 扩展共用",
+  "main": "./dist/index.mjs",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "files": [
+    "src",
+    "dist"
+  ],
+  "scripts": {
+    "build": "node ../../scripts/build-core.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@noble/ciphers": "^1.2.0",
+    "@noble/hashes": "^1.7.0"
+  }
+}

@@ -1,0 +1,86 @@
+<view class="page">
+  <view class="hero">
+    <view class="title">Aegis</view>
+    <view class="subtitle">你的第二把钥匙,只存在你自己的设备上</view>
+  </view>
+
+  <!-- 首次使用:创建保险库 -->
+  <block wx:if="{{mode === 'create'}}">
+    <view class="notice">
+      主密码是本应用唯一能解密你账号的凭据。它不会被上传到任何服务器,也无法找回——请务必牢记。
+    </view>
+
+    <view class="card">
+      <view class="field">
+        <text class="label">设置主密码</text>
+        <input
+          class="input"
+          password
+          value="{{password}}"
+          bindinput="onPassword"
+          placeholder="至少 8 位,建议混合大小写、数字与符号"
+          placeholder-class="ph"
+        />
+        <view wx:if="{{password.length > 0}}" class="strength">
+          <view class="strength-bar">
+            <view
+              class="strength-fill"
+              style="width: {{strengthPercent}}%; background: {{strengthColor}}"
+            ></view>
+          </view>
+          <text class="strength-text">{{strengthLabel}}</text>
+        </view>
+        <view class="hint">{{strengthHint}}</view>
+      </view>
+
+      <view class="field">
+        <text class="label">确认主密码</text>
+        <input
+          class="input"
+          password
+          value="{{confirm}}"
+          bindinput="onConfirm"
+          placeholder="再次输入以确认"
+        />
+      </view>
+
+      <view wx:if="{{error}}" class="error">{{error}}</view>
+
+      <view
+        class="btn-primary {{canSubmit ? '' : 'btn-primary-disabled'}}"
+        bindtap="onCreate"
+      >创建保险库</view>
+
+      <view class="btn-ghost" bindtap="goToUnlock">已有保险库?去解锁</view>
+    </view>
+  </block>
+
+  <!-- 已有保险库:解锁 -->
+  <block wx:else>
+    <view class="card">
+      <view class="field">
+        <text class="label">输入主密码</text>
+        <input
+          class="input"
+          password
+          value="{{password}}"
+          bindinput="onPassword"
+          bindconfirm="onUnlock"
+          confirm-type="done"
+          placeholder="请输入主密码"
+        />
+      </view>
+
+      <view wx:if="{{error}}" class="error">{{error}}</view>
+
+      <view
+        class="btn-primary {{password.length > 0 ? '' : 'btn-primary-disabled'}}"
+        bindtap="onUnlock"
+      >解锁</view>
+
+      <view class="btn-ghost" bindtap="goToCreate">忘记密码?新建保险库</view>
+    </view>
+  </block>
+
+  <view class="link" bindtap="goToAbout">关于本应用的安全性</view>
+</view>

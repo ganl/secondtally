@@ -1,0 +1,56 @@
+<view class="page">
+  <view class="hero"><view class="title">设置</view></view>
+
+  <!-- 同步 -->
+  <view class="section-title">云同步</view>
+  <view class="card">
+    <view wx:if="{{!syncEnabled}}">
+      <view class="notice">
+        同步后可在其他设备上使用同一份账号库。同步的只有密文,服务器无法解读你的种子。
+      </view>
+      <text class="label">同步账户名</text>
+      <input class="input" value="{{accountName}}" bindinput="onAccountName" placeholder="多设备请填相同的名称" placeholder-class="ph" />
+      <text class="label">登录密码</text>
+      <input class="input" password value="{{syncPassword}}" bindinput="onSyncPassword" placeholder="用于登录同步服务" placeholder-class="ph" />
+      <view class="hint">
+        这里的密码只用于向你的同步服务器证明身份,不是主密码,可以与主密码不同。
+        但仍建议用一个独立且足够强的密码。
+      </view>
+      <view wx:if="{{syncError}}" class="error">{{syncError}}</view>
+      <view class="btn" bindtap="onConnectSync">开启同步</view>
+    </view>
+
+    <view wx:else>
+      <view class="row"><text class="row-label">状态</text><text class="row-value">{{syncStateLabel}}</text></view>
+      <view class="row"><text class="row-label">同步账户</text><text class="row-value">{{accountName}}</text></view>
+      <view class="row"><text class="row-label">本机设备标识</text><text class="row-value">{{deviceId}}</text></view>
+      <view class="row"><text class="row-label">时钟偏移</text><text class="row-value">{{driftLabel}}</text></view>
+      <view wx:if="{{syncError}}" class="error">{{syncError}}</view>
+      <view wx:if="{{syncSuccess}}" class="success">{{syncSuccess}}</view>
+      <view class="btn" bindtap="onSyncNow">立即同步</view>
+      <view class="btn-ghost" bindtap="goRecovery">恢复码管理</view>
+      <view class="btn-ghost btn-danger" bindtap="onDisconnectSync">关闭同步</view>
+    </view>
+  </view>
+
+  <!-- 安全 -->
+  <view class="section-title">安全</view>
+  <view class="card">
+    <view class="row"><text class="row-label">自动锁定</text><text class="row-value">3 分钟无操作</text></view>
+    <view class="row"><text class="row-label">密钥派生</text><text class="row-value">PBKDF2-SHA256 / 21 万次</text></view>
+    <view class="row"><text class="row-label">加密算法</text><text class="row-value">AES-256-GCM</text></view>
+    <view class="hint">
+      主密码与种子永不离开本机。忘记主密码后,任何人都无法恢复你的账号——
+      这是加密生效的证明,不是缺陷。
+    </view>
+  </view>
+
+  <!-- 数据 -->
+  <view class="section-title">数据</view>
+  <view class="card">
+    <view class="btn" bindtap="onExport">导出加密保险库</view>
+    <view class="btn-ghost" bindtap="onImport">从文件导入</view>
+    <view class="btn-ghost" bindtap="goAudit">查看使用记录</view>
+    <view class="btn-ghost btn-danger" bindtap="onWipe">清空本机数据</view>
+  </view>
+</view>

@@ -1,0 +1,38 @@
+node_modules/
+dist/
+*.tsbuildinfo
+
+# 测试临时产物
+.tmp/
+
+# 运行时数据,可能含密文与本地配置,一律不入库
+server/data/
+server-go/data/
+aegis-server
+aegis-server.exe
+server/.env
+server-go/.env
+.env
+.env.local
+*.db
+*.sqlite
+*.sqlite3
+*.db-wal
+*.db-shm
+
+# 导出的保险库文件可能含敏感密文,不要误提交
+exports/
+*.2favault
+*.aegisvault
+
+# 浏览器扩展打包产物
+apps/extension/dist/
+
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+
+# 工作区元数据(计划、日志、会话),属于本机状态
+.workbuddy/

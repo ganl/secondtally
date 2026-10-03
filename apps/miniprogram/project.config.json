@@ -1,0 +1,16 @@
+{
+  "description": "Aegis 2FA 双重认证器",
+  "miniprogramRoot": "./",
+  "compileType": "miniprogram",
+  "appid": "请替换为你的小程序AppID",
+  "projectname": "aegis-2fa",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true,
+    "ignoreDevUnusedFiles": false
+  },
+  "libVersion": "3.5.5"
+}

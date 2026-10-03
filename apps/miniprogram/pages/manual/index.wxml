@@ -1,0 +1,57 @@
+<view class="page">
+  <view class="hero"><view class="title">手动添加</view></view>
+
+  <view class="card">
+    <text class="label">服务名称</text>
+    <input class="input" value="{{issuer}}" bindinput="onIssuer" placeholder="如 GitHub" placeholder-class="ph" />
+
+    <text class="label">账户</text>
+    <input class="input" value="{{account}}" bindinput="onAccount" placeholder="如 alice@example.com" placeholder-class="ph" />
+
+    <text class="label">种子密钥</text>
+    <input class="input mono" value="{{secret}}" bindinput="onSecret" placeholder="Base32 字符串" placeholder-class="ph" />
+    <view class="hint">
+      种子通常在服务网站的"设置 → 安全 → 两步验证"页面,以 Base32 字符串或二维码形式给出。空格可忽略,大小写不敏感。
+    </view>
+
+    <view class="row">
+      <view class="row-item">
+        <text class="label">算法</text>
+        <picker
+          mode="selector"
+          range="{{algorithms}}"
+          value="{{algorithmIndex}}"
+          bindchange="onAlgorithm"
+        ><view class="picker">{{algorithms[algorithmIndex]}}</view></picker>
+      </view>
+      <view class="row-item">
+        <text class="label">位数</text>
+        <picker
+          mode="selector"
+          range="{{digitOptions}}"
+          value="{{digitIndex}}"
+          bindchange="onDigits"
+        ><view class="picker">{{digits}} 位</view></picker>
+      </view>
+    </view>
+
+    <text class="label">时间周期</text>
+    <picker
+      mode="selector"
+      range="{{periodOptions}}"
+      value="{{periodIndex}}"
+      bindchange="onPeriod"
+    ><view class="picker">{{period}} 秒</view></picker>
+
+    <view wx:if="{{error}}" class="error">{{error}}</view>
+
+    <view
+      class="btn {{canSubmit ? '' : 'btn-disabled'}}"
+      bindtap="onSubmit"
+    >保存</view>
+  </view>
+
+  <view class="hint">
+    绝大多数服务使用 SHA1 / 6 位 / 30 秒。若不确定,保持默认即可——填错会导致验证码始终无效。
+  </view>
+</view>

@@ -1,0 +1,10 @@
+{
+  "name": "@aegis/extension",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "MV3 浏览器扩展:把 TOTP 验证码填进网页登录框",
+  "scripts": {
+    "build": "node ../../scripts/build-ext.mjs"
+  }
+}

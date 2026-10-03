@@ -1,0 +1,62 @@
+<view class="page">
+  <view class="top-bar">
+    <view class="top-action" bindtap="goAudit">使用记录</view>
+    <view class="top-action">
+      <view class="sync-dot {{syncClass}}" bindtap="goSettings"></view>
+      {{syncLabel}}
+    </view>
+    <view class="top-action" bindtap="goSettings">设置</view>
+  </view>
+
+  <view class="search-bar">
+    <input
+      class="search-input"
+      value="{{query}}"
+      bindinput="onSearch"
+      placeholder="搜索服务或账户"
+      placeholder-class="ph"
+    />
+  </view>
+
+  <view wx:if="{{groups.length > 0}}">
+    <block wx:for="{{groups}}" wx:key="label">
+      <view class="section-label">{{item.label}} · {{item.items.length}}</view>
+      <view
+        wx:for="{{item.items}}"
+        wx:key="id"
+        class="entry-card"
+        bindtap="goEntry"
+        data-id="{{item.id}}"
+        bindlongpress="onCopyCode"
+      >
+        <view class="entry-left">
+          <view class="entry-issuer">
+            <text wx:if="{{item.favorite}}" class="fav-star">★</text>
+            {{item.issuer}}
+          </view>
+          <view class="entry-account">{{item.account}}</view>
+        </view>
+        <view class="code-block">
+          <view class="code-value {{item.dimmed ? 'code-expired' : ''}}">
+            <text class="code-separator">{{item.codePart1}}</text><text>{{item.codePart2}}</text>
+          </view>
+          <view class="progress-track">
+            <view
+              class="progress-fill {{item.urgent ? 'progress-fill-urgent' : ''}}"
+              style="width: {{item.percent}}%"
+            ></view>
+          </view>
+        </view>
+      </view>
+    </block>
+  </view>
+
+  <view wx:else class="empty">
+    <view class="empty-title">{{query ? '没有匹配的账号' : '还没有添加任何账号'}}</view>
+    <view class="empty-desc">
+      {{query ? '换个关键词试试' : '点击右下角 + 扫码添加,或从 Google Authenticator 批量迁移'}}
+    </view>
+  </view>
+
+  <view class="fab" bindtap="goAdd">+</view>
+</view>

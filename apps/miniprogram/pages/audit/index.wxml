@@ -1,0 +1,27 @@
+<view class="page">
+  <view class="hero">
+    <view class="title">使用记录</view>
+    <view class="desc">用于排查是否有异常访问。记录只保存在你的设备上。</view>
+  </view>
+
+  <view wx:if="{{events.length > 0}}">
+    <view wx:for="{{events}}" wx:key="id" class="item">
+      <view class="item-head">
+        <view>
+          <text class="item-action">{{item.label}}</text>
+          <text class="badge badge-{{item.outcome}}">{{item.outcomeLabel}}</text>
+        </view>
+        <text class="item-time">{{item.time}}</text>
+      </view>
+      <view wx:if="{{item.detail}}" class="item-detail">{{item.detail}}</view>
+    </view>
+  </view>
+
+  <view wx:else class="empty">暂无记录</view>
+
+  <view class="privacy">
+    审计日志只记录"做了什么",绝不记录验证码本身与种子明文。
+    验证码仅 30 秒有效,留存没有审计价值,却会成为新的攻击面。
+    日志最多保留最近 500 条。
+  </view>
+</view>

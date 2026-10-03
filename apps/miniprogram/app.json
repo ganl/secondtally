@@ -1,0 +1,25 @@
+{
+  "pages": [
+    "pages/gate/index",
+    "pages/vault/index",
+    "pages/add/index",
+    "pages/manual/index",
+    "pages/entry/index",
+    "pages/recovery/index",
+    "pages/audit/index",
+    "pages/settings/index"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#111827",
+    "navigationBarTitleText": "Aegis 2FA",
+    "navigationBarTextStyle": "white"
+  },
+  "permission": {
+    "scope.camera": {
+      "desc": "用于扫描服务提供的二维码,导入双重认证账号"
+    }
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

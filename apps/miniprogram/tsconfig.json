@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+
+    // 严格度说明:页面逻辑较薄,真正的密码学与合并逻辑在 packages/core,
+    // 那里开了完整 strict + noUncheckedIndexedAccess。这里关掉 strict 是为了
+    // 不被微信回调的隐式 any 淹没——wx 是 any,回调参数必然退化成 any。
+    // 代价是页面层的类型检查较弱,故 core 的严格性尤其重要。
+    "strict": false,
+    "noEmit": true,
+    "skipLibCheck": true,
+
+    // 不开 allowJs。开了之后 tsc 会优先采用 utils/core.mjs 这个 JS 构建产物,
+    // 从而忽略 build-miniprogram.mjs 为它生成的 core.d.ts,
+    // 结果是所有导出都报"has no exported member"。
+    // 产物是给微信运行时用的,typecheck 只看源码与声明文件。
+    "allowJs": false,
+    "types": []
+  },
+
+  // 重要:各页面的 `var appInstance = getApp()` 必须保持 var,不要改成 const。
+  //
+  // 原因:TypeScript 判定小程序页面属于同一全局作用域(尽管它们各自 import 了
+  // core),于是所有页面的顶层 const 同名即报 TS2451 "Cannot redeclare"。
+  // 运行时每个页面是独立作用域,这个报错是误报。var 在全局脚本作用域下
+  // 可重复声明,恰好绕开该误报,且不引入真实的行为差异。
+  // 试过更"干净"的办法——paths 映射、ambient module 转发、.d.mts 配对——
+  // 都会引出更难解释的问题,见 utils/index.d.ts 顶部注释。
+  "include": ["app.ts", "pages/**/*.ts", "platform.ts", "utils/**/*.d.ts"]
+}

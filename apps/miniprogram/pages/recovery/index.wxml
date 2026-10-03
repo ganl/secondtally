@@ -1,0 +1,57 @@
+<view class="page">
+  <!-- 首次创建:展示一次性恢复码 -->
+  <block wx:if="{{mode === 'first'}}">
+    <view class="hero"><view class="title">保存你的恢复码</view></view>
+
+    <view class="notice">
+      这 {{codes.length}} 个恢复码每个只能使用一次。它们是你在无法输入主密码时唯一的补救手段。
+      本应用只在此刻显示一次,关闭后无法再次查看。
+    </view>
+
+    <view class="card">
+      <view class="code-list">
+        <view wx:for="{{codes}}" wx:key="*this" class="code-item">{{index + 1}}. {{item}}</view>
+      </view>
+    </view>
+
+    <view class="btn" bindtap="onCopyAll">复制全部</view>
+    <view class="btn-ghost" bindtap="onNext">我已妥善保存</view>
+  </block>
+
+  <!-- 恢复码管理 -->
+  <block wx:else>
+    <view class="hero"><view class="title">恢复码</view></view>
+
+    <view class="card">
+      <view class="stat-row">
+        <text class="stat-label">剩余可用</text>
+        <text class="stat-value">{{remaining}} / {{total}}</text>
+      </view>
+      <view class="hint" wx:if="{{remaining <= 3}}">
+        剩余恢复码不多。建议重新生成一组并妥善保存——重新生成会让旧码全部失效。
+      </view>
+    </view>
+
+    <view wx:if="{{error}}" class="error">{{error}}</view>
+    <view wx:if="{{success}}" class="success">{{success}}</view>
+
+    <view class="card">
+      <text class="label">核销一个恢复码</text>
+      <input
+        class="value"
+        value="{{input}}"
+        bindinput="onInput"
+        placeholder="XXXXX-XXXXX"
+        placeholder-class="ph"
+        style="background:#0f172a;border-radius:14rpx;padding:24rpx;border:2rpx solid #334155"
+      />
+      <view class="btn" bindtap="onConsume" style="margin-top:28rpx">核销</view>
+      <view class="hint">
+        核销后该码立即失效,不可重复使用。若输入错误,不会消耗任何恢复码。
+      </view>
+    </view>
+
+    <view class="btn btn-danger" bindtap="onRegenerate">重新生成全部恢复码</view>
+    <view class="btn-ghost" bindtap="goBack">返回</view>
+  </block>
+</view>

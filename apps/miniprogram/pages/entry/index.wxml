@@ -1,0 +1,35 @@
+<view class="page">
+  <view wx:if="{{entry}}">
+    <view class="code-hero" bindtap="onCopy">
+      <view class="code-value {{expired ? 'code-expired' : ''}}">
+        <text class="code-sep">{{codePart1}}</text><text>{{codePart2}}</text>
+      </view>
+      <view class="progress-track">
+        <view class="progress-fill {{urgent ? 'progress-fill-urgent' : ''}}" style="width: {{percent}}%"></view>
+      </view>
+      <view class="seconds">{{seconds}} 秒后刷新</view>
+      <view class="copy-hint">点击复制到剪贴板</view>
+    </view>
+
+    <view class="card">
+      <view class="row"><text class="row-label">服务</text><text class="row-value">{{entry.issuer}}</text></view>
+      <view class="row"><text class="row-label">账户</text><text class="row-value">{{entry.account}}</text></view>
+      <view class="row"><text class="row-label">种子</text><text class="row-value mono">{{entry.secret}}</text></view>
+      <view class="row"><text class="row-label">算法</text><text class="row-value">{{entry.algorithm}}</text></view>
+      <view class="row"><text class="row-label">位数 / 周期</text><text class="row-value">{{entry.digits}} 位 / {{entry.period}} 秒</text></view>
+      <view wx:if="{{entry.note}}" class="row"><text class="row-label">备注</text><text class="row-value">{{entry.note}}</text></view>
+      <view class="warn">
+        种子等同于账号的第二把钥匙。任何拿到它的人都能生成你的验证码,请勿分享或截图。
+      </view>
+    </view>
+
+    <view class="btn" bindtap="onToggleFavorite">{{entry.favorite ? '取消收藏' : '收藏'}}</view>
+    <view class="btn-ghost" bindtap="onEditAccount">修改账户名</view>
+    <view class="btn-ghost" bindtap="onAddNote">{{entry.note ? '修改备注' : '添加备注'}}</view>
+    <view class="btn-ghost btn-danger" bindtap="onRemove">删除此账号</view>
+  </view>
+
+  <view wx:else class="card">
+    <view class="row-label">条目不存在或已被删除</view>
+  </view>
+</view>

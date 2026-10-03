@@ -1,0 +1,24 @@
+.page { min-height: 100vh; background: #0f172a; padding: 0 32rpx 64rpx; }
+.hero { padding: 48rpx 0 24rpx; }
+.title { font-size: 40rpx; color: #f8fafc; font-weight: 600; }
+.card { background: #1e293b; border-radius: 20rpx; padding: 32rpx; margin-bottom: 24rpx; }
+.label { font-size: 26rpx; color: #cbd5e1; margin-bottom: 14rpx; display: block; }
+.input {
+  background: #0f172a; border-radius: 14rpx; padding: 24rpx;
+  color: #f8fafc; font-size: 30rpx; border: 2rpx solid #334155; margin-bottom: 20rpx;
+}
+.row { display: flex; justify-content: space-between; padding: 22rpx 0; border-bottom: 1rpx solid #334155; }
+.row:last-child { border-bottom: none; }
+.row-label { font-size: 26rpx; color: #94a3b8; }
+.row-value { font-size: 26rpx; color: #f8fafc; }
+.hint { font-size: 24rpx; color: #64748b; line-height: 1.6; margin-top: 16rpx; }
+.btn { background: #6366f1; color: #fff; border-radius: 16rpx; padding: 28rpx; font-size: 30rpx; text-align: center; }
+.btn-ghost {
+  background: transparent; color: #94a3b8; border: 2rpx solid #334155;
+  border-radius: 16rpx; padding: 24rpx; font-size: 28rpx; text-align: center; margin-top: 20rpx;
+}
+.btn-danger { background: #7f1d1d; color: #fecaca; }
+.error { background: rgba(239,68,68,0.12); border: 2rpx solid #7f1d1d; border-radius: 12rpx; padding: 18rpx 22rpx; color: #fca5a5; font-size: 25rpx; margin-bottom: 20rpx; }
+.success { background: rgba(34,197,94,0.1); border: 2rpx solid #14532d; border-radius: 12rpx; padding: 18rpx 22rpx; color: #86efac; font-size: 25rpx; margin-bottom: 20rpx; }
+.notice { background: rgba(245,158,11,0.1); border: 2rpx solid #78350f; border-radius: 12rpx; padding: 20rpx 24rpx; color: #fcd34d; font-size: 24rpx; line-height: 1.6; margin-bottom: 24rpx; }
+.section-title { font-size: 26rpx; color: #64748b; margin: 32rpx 0 16rpx; }

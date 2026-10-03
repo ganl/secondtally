@@ -1,0 +1,36 @@
+{
+  "name": "aegis-2fa",
+  "version": "0.1.0",
+  "private": true,
+  "description": "端到端加密的 TOTP 双重认证器,支持微信小程序 / Web / 浏览器扩展跨端",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "server",
+    "apps/miniprogram",
+    "apps/web",
+    "apps/extension"
+  ],
+  "scripts": {
+    "build:core": "node scripts/build-core.mjs",
+    "build:web": "node scripts/build-web.mjs",
+    "build:ext": "node scripts/build-ext.mjs",
+    "build:server": "tsc -p server/tsconfig.json",
+    "build": "npm run build:core && npm run build:web && npm run build:ext && npm run build:server",
+    "test": "node --test packages/core/test/*.test.mjs apps/extension/test/*.test.mjs",
+    "typecheck": "tsc -p packages/core/tsconfig.json --noEmit && tsc -p apps/miniprogram/tsconfig.json --noEmit",
+    "dev:server": "node --watch server/dist/index.js",
+    "start:server": "node server/dist/index.js"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0",
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "@noble/ciphers": "^1.2.0",
+    "@noble/hashes": "^1.7.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,147 @@
+/* 解锁 / 创建 页面样式 */
+
+.page {
+  min-height: 100vh;
+  background: #0f172a;
+  padding: 0 32rpx 64rpx;
+  box-sizing: border-box;
+}
+
+.hero {
+  padding: 96rpx 0 56rpx;
+}
+
+.title {
+  font-size: 52rpx;
+  color: #f8fafc;
+  font-weight: 600;
+  letter-spacing: 1rpx;
+}
+
+.subtitle {
+  margin-top: 16rpx;
+  font-size: 26rpx;
+  color: #94a3b8;
+  line-height: 1.6;
+}
+
+.card {
+  background: #1e293b;
+  border-radius: 24rpx;
+  padding: 40rpx;
+  margin-bottom: 32rpx;
+}
+
+.label {
+  font-size: 26rpx;
+  color: #cbd5e1;
+  margin-bottom: 16rpx;
+  display: block;
+}
+
+.input {
+  background: #0f172a;
+  border-radius: 16rpx;
+  padding: 26rpx 24rpx;
+  color: #f8fafc;
+  font-size: 30rpx;
+  border: 2rpx solid #334155;
+}
+
+.input-focus {
+  border-color: #6366f1;
+}
+
+.field {
+  margin-bottom: 32rpx;
+}
+
+.strength {
+  display: flex;
+  align-items: center;
+  margin-top: 16rpx;
+}
+
+.strength-bar {
+  flex: 1;
+  height: 8rpx;
+  background: #334155;
+  border-radius: 4rpx;
+  overflow: hidden;
+}
+
+.strength-fill {
+  height: 100%;
+  border-radius: 4rpx;
+  transition: width 0.2s ease;
+}
+
+.strength-text {
+  margin-left: 16rpx;
+  font-size: 24rpx;
+  color: #94a3b8;
+  min-width: 60rpx;
+  text-align: right;
+}
+
+.hint {
+  font-size: 24rpx;
+  color: #64748b;
+  margin-top: 12rpx;
+  line-height: 1.5;
+}
+
+.btn-primary {
+  background: #6366f1;
+  color: #ffffff;
+  border-radius: 16rpx;
+  padding: 28rpx;
+  font-size: 32rpx;
+  text-align: center;
+  font-weight: 500;
+}
+
+.btn-primary-disabled {
+  background: #334155;
+  color: #64748b;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: #94a3b8;
+  border: 2rpx solid #334155;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  font-size: 28rpx;
+  text-align: center;
+  margin-top: 24rpx;
+}
+
+.error {
+  background: rgba(239, 68, 68, 0.12);
+  border: 2rpx solid #7f1d1d;
+  border-radius: 12rpx;
+  padding: 20rpx 24rpx;
+  color: #fca5a5;
+  font-size: 26rpx;
+  margin-bottom: 24rpx;
+  line-height: 1.5;
+}
+
+.notice {
+  background: rgba(245, 158, 11, 0.1);
+  border: 2rpx solid #78350f;
+  border-radius: 12rpx;
+  padding: 20rpx 24rpx;
+  color: #fcd34d;
+  font-size: 24rpx;
+  line-height: 1.6;
+  margin-bottom: 32rpx;
+}
+
+.link {
+  color: #818cf8;
+  font-size: 26rpx;
+  text-align: center;
+  padding: 24rpx;
+}
