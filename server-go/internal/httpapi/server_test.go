@@ -31,13 +31,17 @@ func newTestServer(t *testing.T) (*httptest.Server, *store.Repository) {
 		AllowedOrigins: []string{"https://2fa.example.com"},
 		AccessTokenTTL: time.Hour,
 		IsProduction:   false,
+		DBDriver:       "sqlite",
 	}
 
 	authSvc, err := auth.New(filepath.Join(dir, "credentials.json"), cfg.TokenSecret)
 	if err != nil {
 		t.Fatalf("创建认证服务失败: %v", err)
 	}
-	repo, err := store.Open(filepath.Join(dir, "vaults.db"))
+	repo, err := store.Open(store.Options{
+		Dialect:    store.DialectSQLite,
+		SQLitePath: filepath.Join(dir, "vaults.db"),
+	})
 	if err != nil {
 		t.Fatalf("打开存储失败: %v", err)
 	}

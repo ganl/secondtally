@@ -22,6 +22,11 @@ type Config struct {
 	AllowedOrigins []string
 	AccessTokenTTL time.Duration
 	IsProduction   bool
+
+	// DBDriver 是数据库类型:sqlite(本地开发/测试)或 postgres(实际部署)。
+	DBDriver string
+	// DatabaseURL 是 PostgreSQL 连接串。仅 DBDriver 为 postgres 时必填。
+	DatabaseURL string
 }
 
 // 默认值。与 .env.example 保持一致。
@@ -36,6 +41,14 @@ const (
 
 	minSecretLength = 32
 )
+
+// defaultDBDriverFor 返回该环境下合适的默认数据库。
+func defaultDBDriverFor(isProduction bool) string {
+	if isProduction {
+		return "postgres"
+	}
+	return "sqlite"
+}
 
 // Getenv 抽象出便于测试的环境变量读取。
 type Getenv func(string) string
@@ -103,6 +116,35 @@ func Load(getenv Getenv) (*Config, error) {
 		return nil, fmt.Errorf("AEGIS_DATA_DIR 不是合法路径: %w", err)
 	}
 
+	// 数据库类型。
+	//
+	// 生产环境默认 PostgreSQL:SQLite 是单文件库,整库串行写,
+	// 用户量上来或上多实例后必然成为瓶颈。
+	// 开发与测试环境默认 SQLite:免装数据库,一条命令就能跑。
+	//
+	// 显式设置 AEGIS_DB_DRIVER 时始终以它为准——
+	// 允许生产环境用 SQLite,因为"单机小规模部署"是真实存在的场景,
+	// 不该由程序替用户做这个决定,只该把默认选对并给出警告。
+	dbDriver := strings.ToLower(getenvDefault(getenv, "AEGIS_DB_DRIVER", defaultDBDriverFor(isProduction)))
+	switch dbDriver {
+	case "sqlite", "postgres":
+	default:
+		return nil, fmt.Errorf("AEGIS_DB_DRIVER 只能是 sqlite 或 postgres,得到 %q", dbDriver)
+	}
+
+	databaseURL := strings.TrimSpace(getenv("AEGIS_DATABASE_URL"))
+	if dbDriver == "postgres" && databaseURL == "" {
+		return nil, fmt.Errorf(
+			"AEGIS_DB_DRIVER=postgres 时必须设置 AEGIS_DATABASE_URL," +
+				"形如 postgres://user:pass@host:5432/aegis?sslmode=require")
+	}
+	if dbDriver == "sqlite" && isProduction && databaseURL != "" {
+		// 不算错误,但几乎肯定是配错了——生产环境用 SQLite 等于放弃了并发能力。
+		// 这里只提示,因为确实存在"单机小规模部署先用 SQLite"的合理场景。
+		fmt.Fprintf(os.Stderr,
+			"警告:检测到 AEGIS_DATABASE_URL 但 AEGIS_DB_DRIVER=sqlite,该连接串不会被使用\n")
+	}
+
 	return &Config{
 		Port:           port,
 		Host:           getenvDefault(getenv, "HOST", defaultHost),
@@ -111,6 +153,8 @@ func Load(getenv Getenv) (*Config, error) {
 		AllowedOrigins: origins,
 		AccessTokenTTL: time.Duration(ttlSecs) * time.Second,
 		IsProduction:   isProduction,
+		DBDriver:       dbDriver,
+		DatabaseURL:    databaseURL,
 	}, nil
 }
 

@@ -101,9 +101,14 @@ npx serve apps/web/dist
 ## 部署
 
 见 [docs/DEPLOY.md](docs/DEPLOY.md),含 systemd 单元、Nginx 配置、
-备份策略与常见问题。
+数据库选型、备份策略与常见问题。
 
-数据目录有两个文件需要备份:`vaults.db`(密文)与 `credentials.json`(账号凭据)。
+存储层可选 **SQLite**(本地开发、单机小规模)或 **PostgreSQL**(实际部署)。
+不设 `AEGIS_DB_DRIVER` 时:开发环境默认 sqlite,生产环境默认 postgres,
+显式设置始终优先。
+
+备份对象随模式而变:SQLite 备 `vaults.db`,PostgreSQL 用 `pg_dump`;
+两种模式都必须备 `credentials.json`(账号凭据,丢了所有用户无法登录同步)。
 
 ## 文档
 
@@ -120,7 +125,10 @@ npx serve apps/web/dist
 
 ## 已知限制
 
-- **SQLite 存储每次改动重写整份密文**,不适合万人规模。几千活跃用户以内没问题。
+- **SQLite 整库串行写,用户集中同步时会排队**。生产环境因此默认走 PostgreSQL;
+  若确实要用 SQLite,请确认是单机小规模场景。**不适用于万人规模**。
+- **同步传的是整份密文,不是增量**。每次改动重写整个保险库信封,
+  密文体积因此增长快,用户量很大时需要引入增量更新。
 - **扩展不提供同步**。跨端同步在 Web 与小程序之间进行,扩展是纯本地使用。
   MV3 的 service worker 生命周期不适合维持长连接。
 - **扩展不支持扫码**。Chrome 扩展无法调起相机,强行用 `getUserMedia` 也不符合

@@ -52,18 +52,89 @@ npm run build          # core / web / ext / server 全部构建
 
 ```bash
 npm run build:server     # 等价于 cd server-go && go build -o dist/aegis-server ./cmd/aegis-server
-npm run test:server      # 跑 52 项 Go 测试
+npm run test:server      # 跑 Go 测试
 ```
+
+> PostgreSQL 的集成测试默认**跳过**(多数开发机没装 PG),
+> 设置连接串后才会真正执行:
+> ```bash
+> # 一次性起个本地实例
+> docker run -d --name aegis-pg -e POSTGRES_PASSWORD=postgres \
+>   -e POSTGRES_DB=aegis_test -p 5433:5432 postgres:16
+>
+> AEGIS_TEST_POSTGRES="postgres://postgres:postgres@127.0.0.1:5433/aegis_test?sslmode=disable" \
+>   npm run test:server
+> ```
+> 不这样设计的话,克隆下来没装数据库就跑不了测试。
 
 > **国内网络注意**:`proxy.golang.org` 直连通常返回 502,先执行:
 > `go env -w GOPROXY=https://goproxy.cn,https://mirrors.aliyun.com/goproxy/,direct`
 
 > **交叉编译**:部署到 Linux 服务器时在本地构建即可,
 > `GOOS=linux GOARCH=amd64 go build -o dist/aegis-server ./cmd/aegis-server`。
-> 项目使用纯 Go 的 SQLite 驱动(`modernc.org/sqlite`),**无需 CGO**,
-> 交叉编译不需要额外的 C 工具链。
+> 项目使用纯 Go 驱动(`modernc.org/sqlite` 与 `github.com/lib/pq`),
+> **两种数据库都不需要 CGO**,交叉编译不需要额外的 C 工具链。
 
-### 2. 配置
+### 2. 选数据库
+
+服务端支持 SQLite 与 PostgreSQL,由 `AEGIS_DB_DRIVER` 决定。
+
+| | SQLite | PostgreSQL |
+| --- | --- | --- |
+| 定位 | 本地开发、单机小规模部署 | **实际部署首选** |
+| 运维成本 | 单文件,零运维 | 需独立实例 |
+| 写并发 | 整库串行写 | 行级锁,并发写 |
+| 多实例 | 不支持(文件锁冲突) | 支持 |
+| 额外依赖 | 无 | `AEGIS_DATABASE_URL` |
+
+**默认值的选取规则**:`AEGIS_ENV=production` 时默认 `postgres`,
+其余环境默认 `sqlite`。但**显式设置始终优先**——
+生产环境用 SQLite 是真实存在的合理场景(单机、不追求多实例),
+程序只负责把默认选对,不替你做这个决定。
+
+配置示例:
+
+```ini
+# 生产环境:PostgreSQL(推荐)
+AEGIS_ENV=production
+AEGIS_DB_DRIVER=postgres
+AEGIS_DATABASE_URL=postgres://aegis:密码@127.0.0.1:5432/aegis?sslmode=require
+```
+
+```ini
+# 单机小规模:SQLite
+AEGIS_ENV=production
+AEGIS_DB_DRIVER=sqlite
+AEGIS_DATA_DIR=/var/lib/aegis
+```
+
+建库与最小权限账号:
+
+```sql
+-- 用 postgres 管理员账号执行
+CREATE ROLE aegis LOGIN PASSWORD '换成随机长密码';
+CREATE DATABASE aegis OWNER aegis;
+-- 若应用与数据库不在同一台机器,再限制来源 IP:
+-- ALTER ROLE aegis CONNECTION LIMIT 20;
+```
+
+`sslmode` 取值:
+
+| 值 | 用途 |
+| --- | --- |
+| `require` | 本机或内网自建实例(推荐,不必配证书) |
+| `disable` | **仅限本机开发调试** |
+| `verify-full` | 生产公网连接,校验服务端证书 |
+
+建表由服务启动时自动完成(`CREATE TABLE IF NOT EXISTS`),
+首次启动连接不上会直接退出并打印错误,不会静默降级。
+
+> **从 SQLite 迁移到 PostgreSQL**:密文是自描述的加密信封,
+> 与存储层无关,两个库的 `envelope` 列内容完全一致。迁移就是把
+> `vaults` 与 `sync_log` 两张表的数据搬过去,无需解密。
+> 记得同时把 `AEGIS_TOKEN_SECRET` 保持一致,否则已签发的令牌全部失效。
+
+### 3. 配置
 
 ```bash
 cp .env.example .env
@@ -77,7 +148,11 @@ AEGIS_ENV=production
 HOST=127.0.0.1              # 只监听回环,由反代对外
 AEGIS_TOKEN_SECRET=<上面生成的值>
 AEGIS_ALLOWED_ORIGINS=https://2fa.example.com
-AEGIS_DATA_DIR=/var/lib/aegis
+
+# 数据库二选一:
+AEGIS_DB_DRIVER=postgres
+AEGIS_DATABASE_URL=postgres://aegis:密码@127.0.0.1:5432/aegis?sslmode=require
+# AEGIS_DATA_DIR=/var/lib/aegis   # 仅 sqlite 模式需要
 ```
 
 `AEGIS_ALLOWED_ORIGINS` 必须写你的真实站点来源,不能留 `*`。
@@ -95,12 +170,19 @@ AEGIS_DATA_DIR=/var/lib/aegis
 | 密钥短于 32 字符 | 至少需要 32 个字符 |
 | CORS 含 `*` | 不允许通配符,请配置具体来源 |
 | CORS 无任何 `https://` 来源 | 生产环境要求 https |
+| 选了 `postgres` 但没给连接串 | 必须设置 `AEGIS_DATABASE_URL` |
+| `AEGIS_DB_DRIVER` 不是 sqlite/postgres | 报错并列出可选值 |
+| PostgreSQL 连不上 | 打印底层错误后退出,不静默改用本地文件 |
 | `PORT` 不在 1–65535 | 端口非法 |
 | `AEGIS_TOKEN_TTL` 越界 | 必须在 60 到 2592000 秒之间 |
 
+> 最后一条尤其重要:数据库连不上时**绝不能**回落到 SQLite。
+> 那会把生产数据写进一个没人备份的本地文件,故障从"连不上库"
+> 悄悄变成"数据丢了"。
+
 完整配置项见 `.env.example` 内的注释。
 
-### 3. systemd 服务
+### 4. systemd 服务
 
 `/etc/systemd/system/aegis.service`:
 
@@ -141,6 +223,10 @@ EnvironmentFile=/opt/aegis/.env
 WantedBy=multi-user.target
 ```
 
+> `ReadWritePaths=/var/lib/aegis` 在两种数据库模式下都要保留:
+> 即使走 PostgreSQL,`credentials.json` 仍写在这个目录里。
+> 去掉它服务会因无法写凭据而启动失败。
+
 ```bash
 sudo useradd --system --no-create-home --shell /usr/sbin/nologin aegis
 sudo mkdir -p /var/lib/aegis && sudo chown aegis:aegis /var/lib/aegis
@@ -154,7 +240,7 @@ sudo systemctl status aegis
 > scrypt 参数、令牌格式、数据库 schema 都保持了向后兼容。
 > 但 `AEGIS_TOKEN_SECRET` 必须一致,否则已签发的令牌全部失效,用户需重新登录。
 
-### 4. Nginx 反代
+### 5. Nginx 反代
 
 ```nginx
 server {
@@ -200,7 +286,7 @@ server {
 
 `try_files ... /index.html` 是为了让 Web 端在子路径部署时刷新不 404。
 
-### 5. 微信小程序配置
+### 6. 微信小程序配置
 
 同步服务地址是编译期常量,在 `apps/miniprogram/app.ts` 顶部:
 
@@ -221,12 +307,15 @@ Web 端与扩展的同步地址则由用户在设置界面自己填,不需要改
 
 ## 二、备份
 
-服务端的数据目录里有两个文件,都要备份:
+无论用哪种数据库,**`credentials.json` 都必须备份**——
+它存着同步账号的 scrypt 口令哈希,丢了会导致所有用户无法登录同步。
 
-| 文件 | 内容 | 泄露后果 |
+| 模式 | 备份对象 | 泄露后果 |
 | --- | --- | --- |
-| `vaults.db` | SQLite 库,存密文与同步日志 | 无法解读密文,但数据可被删除/覆盖 |
-| `credentials.json` | 同步账号的 scrypt 口令哈希 + 刷新令牌哈希 | 可离线爆破同步账号口令 |
+| sqlite | `vaults.db` + `credentials.json` | 无法解读密文,但数据可被删除/覆盖 |
+| postgres | `pg_dump` + `credentials.json` | 同上 |
+
+### SQLite 模式
 
 ```bash
 # 用 sqlite3 的在线备份,不会因正在写入而拿到损坏的副本
@@ -241,9 +330,39 @@ find /var/backups -name 'aegis-*' -mtime +30 -delete
 
 不要直接 `cp` 数据库文件:服务正在写入时可能拷到半写状态。
 
-数据规模参考:每条记录是加密后的保险库全文。一万个账号的库约几 MB ——
-因为每次改动都重写整份密文。**这不适合万人规模**。
-如果预期超过几千活跃用户,应该把存储层从 SQLite 换成支持增量更新的方案。
+### PostgreSQL 模式
+
+```bash
+# 自定义格式,支持并行恢复与选择性还原
+pg_dump -Fc -U aegis -d aegis -f "/var/backups/aegis-$(date +%F).dump"
+
+cp /var/lib/aegis/credentials.json "/var/backups/aegis-credentials-$(date +%F).json"
+
+find /var/backups -name 'aegis-*' -mtime +30 -delete
+```
+
+用 `pg_dump` 而不是直接拷数据目录:数据目录拷出来**很可能无法直接恢复**,
+必须配好版本与归档设置才能用,不如用逻辑备份可靠。
+
+恢复演练(建议每季度做一次,不然后出事才发现备份是坏的):
+
+```bash
+createdb -U aegis aegis_restore_test
+pg_restore -U aegis -d aegis_restore_test --no-owner "/var/backups/aegis-2026-10-03.dump"
+psql -U aegis -d aegis_restore_test -c "SELECT count(*) FROM vaults;"
+dropdb -U aegis aegis_restore_test
+```
+
+### 数据规模
+
+每条记录是加密后的保险库全文,每次改动重写整份密文。
+所以**密文体积不随用户数增长过快**,一万个账号的库也就几 MB(PG 模式)。
+
+真正的规模瓶颈是**写并发**:SQLite 整库串行写,用户集中同步时
+写锁会让请求排队。所以生产环境默认走 PostgreSQL。
+
+如果预期用户量超过几千、且出现多设备同时同步的写高峰,
+再考虑后续引入增量更新(目前每次同步传的是整份密文)。
 
 ## 三、浏览器扩展
 
@@ -292,6 +411,25 @@ journalctl -u aegis -f
 **同步返回 409**
 正常的并发冲突,客户端会拉取合并后重试。持续 409 说明多个客户端
 在同一时间改同一个库——让用户确认是否多设备同时在编辑。
+
+**启动报 "PostgreSQL 不可用"**
+按可能性排序排查:
+
+1. `AEGIS_DATABASE_URL` 的 host/port 与实际实例是否一致
+2. `sslmode` 是否与实例配置匹配(自建实例通常用 `require`,不是 `verify-full`)
+3. 账号密码是否正确,以及该账号是否有 `CONNECT` 权限
+4. 实例的 `pg_hba.conf` 是否放行了应用服务器的 IP
+5. 实例的 `max_connections` 是否已被打满
+
+服务启动时就会 `Ping` 一次,连不上直接退出,**不会**静默改用本地文件。
+用 `psql "postgres://aegis:密码@127.0.0.1:5432/aegis?sslmode=require" -c "SELECT 1"`
+先确认连接串本身通不通,再回来看服务日志。
+
+**想把生产库换成 PostgreSQL**
+密文信封是自描述的,与存储层无关,直接搬两张表的数据即可,无需解密。
+先在 sqlite 模式下 `sqlite3 vaults.db .dump` 看一眼表结构,
+再到 PG 里建同样的表(`BIGSERIAL` 替 `AUTOINCREMENT`),
+然后导数据。迁移期间 `AEGIS_TOKEN_SECRET` 必须保持一致。
 
 **提示"云端数据无法用当前主密码解密"**
 两端主密码不同。端到端加密的必然结果——服务端没有能力帮你解决,

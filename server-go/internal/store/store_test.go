@@ -11,7 +11,10 @@ import (
 
 func newTestRepo(t *testing.T) *Repository {
 	t.Helper()
-	repo, err := Open(filepath.Join(t.TempDir(), "vaults.db"))
+	repo, err := Open(Options{
+		Dialect:    DialectSQLite,
+		SQLitePath: filepath.Join(t.TempDir(), "vaults.db"),
+	})
 	if err != nil {
 		t.Fatalf("打开数据库失败: %v", err)
 	}
@@ -322,7 +325,7 @@ func TestPersistenceAcrossReopen(t *testing.T) {
 	path := filepath.Join(dir, "vaults.db")
 	ctx := context.Background()
 
-	repo, err := Open(path)
+	repo, err := Open(Options{Dialect: DialectSQLite, SQLitePath: path})
 	if err != nil {
 		t.Fatalf("首次打开失败: %v", err)
 	}
@@ -333,7 +336,7 @@ func TestPersistenceAcrossReopen(t *testing.T) {
 		t.Fatalf("关闭失败: %v", err)
 	}
 
-	reopened, err := Open(path)
+	reopened, err := Open(Options{Dialect: DialectSQLite, SQLitePath: path})
 	if err != nil {
 		t.Fatalf("重新打开失败: %v", err)
 	}
