@@ -149,8 +149,15 @@ func (r *Repository) Get(ctx context.Context, userID string) (*Vault, error) {
 
 // Put 条件写入。
 //
-// baseRevision 为 nil 表示"必须不存在才写入"(首次上传)。
+// baseRevision 表示"客户端见到的版本",nil 或 0 都表示"我不知道版本"。
+// 服务端有记录而客户端说不知道 -> 冲突(不能盲目覆盖)。
+// 服务端无记录 -> 允许写入(首次上传)。
 // 版本不匹配时返回 ErrConflict,绝不覆盖。
+//
+// 为什么把 0 与 nil 同等对待:客户端(core/src/vault/service.ts:554)在
+// 首次同步时发出的是 `baseRevision: this.revision`,而该字段初值为 0。
+// 若只认 nil,首发会被判为冲突,新用户永远传不上第一份保险库——
+// 这是实测发现的缺陷,不是理论推演。
 //
 // 实现上用单条 UPDATE 让判断与写入在同一个事务里原子完成。
 // TypeScript 版是"先 get 再按 revision 条件 update"两步操作,
@@ -171,6 +178,10 @@ func (r *Repository) Put(
 	// 那不是需要处理的问题。
 	defer func() { _ = tx.Rollback() }()
 
+	// 归一化:nil 与 0 都表示"客户端不知道版本"。
+	// 见上方函数注释——客户端首发时发的是 0。
+	knownRevision := baseRevision != nil && *baseRevision > 0
+
 	var current int64
 	err = tx.QueryRowContext(ctx,
 		`SELECT revision FROM vaults WHERE user_id = ?`, userID).Scan(&current)
@@ -178,7 +189,7 @@ func (r *Repository) Put(
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		// 记录不存在:仅当客户端也不知道版本(首次上传)时才允许写入。
-		if baseRevision != nil {
+		if knownRevision {
 			return 0, ErrConflict
 		}
 		if _, err := tx.ExecContext(ctx,
@@ -200,7 +211,8 @@ func (r *Repository) Put(
 		return 0, fmt.Errorf("查询当前版本失败: %w", err)
 
 	default:
-		if baseRevision == nil || *baseRevision != current {
+		// 服务端有记录:客户端必须知道且版本匹配才允许覆盖。
+		if !knownRevision || *baseRevision != current {
 			return 0, ErrConflict
 		}
 		next := current + 1

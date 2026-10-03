@@ -67,6 +67,52 @@ func TestPutFirstWriteRequiresNoBaseRevision(t *testing.T) {
 	}
 }
 
+// TestPutFirstWriteAcceptsZeroBaseRevision 锁住一条真实的客户端契约。
+//
+// core 在首次同步时发出的是 `baseRevision: this.revision`,
+// 而该字段初值为 0(见 packages/core/src/vault/service.ts:554)。
+// 所以 0 与 nil 一样表示"客户端不知道服务端版本",都必须被接受——
+// 否则新用户永远传不上第一份保险库。
+//
+// 这条测试是端到端实测发现的:原实现只认 nil,首发被判 409。
+func TestPutFirstWriteAcceptsZeroBaseRevision(t *testing.T) {
+	repo := newTestRepo(t)
+	ctx := context.Background()
+	now := int64(1700000000000)
+
+	// 客户端首发:传 0,不是 nil。
+	got, err := repo.Put(ctx, "alice", `{"v":1}`, now, "web-1", rev(0))
+	if err != nil {
+		t.Fatalf("客户端首发传 baseRevision=0 应成功(它表示不知道版本), 得到 %v", err)
+	}
+	if got != 1 {
+		t.Fatalf("首发后 revision 应为 1, 得到 %d", got)
+	}
+
+	// 同样地,nil 也应被接受——两条路径都得通。
+	if _, err := repo.Put(ctx, "bob", `{"v":1}`, now, "web-1", nil); err != nil {
+		t.Fatalf("传 nil 也应表示不知道版本, 得到 %v", err)
+	}
+
+	// 关键:记录已存在时,客户端说"我不知道版本"(0 或 nil)
+	// 必须被当作冲突拒绝,否则会静默覆盖另一台设备的数据。
+	if _, err := repo.Put(ctx, "alice", `{"v":2}`, now+1, "web-1", rev(0)); !errors.Is(err, ErrConflict) {
+		t.Fatalf("记录已存在时传 0 应返回 ErrConflict, 得到 %v", err)
+	}
+	if _, err := repo.Put(ctx, "alice", `{"v":2}`, now+1, "web-1", nil); !errors.Is(err, ErrConflict) {
+		t.Fatalf("记录已存在时传 nil 应返回 ErrConflict, 得到 %v", err)
+	}
+
+	// 数据必须完好。
+	rec, err := repo.Get(ctx, "alice")
+	if err != nil {
+		t.Fatalf("读取失败: %v", err)
+	}
+	if rec.Envelope != `{"v":1}` {
+		t.Fatalf("被拒绝的写入不应改动数据, 得到 %q", rec.Envelope)
+	}
+}
+
 func TestPutIncrementsRevision(t *testing.T) {
 	repo := newTestRepo(t)
 	ctx := context.Background()

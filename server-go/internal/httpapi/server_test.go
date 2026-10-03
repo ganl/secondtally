@@ -444,6 +444,51 @@ func TestFirstPushWithRevisionFails(t *testing.T) {
 	}
 }
 
+// TestFirstPushWithZeroBaseRevisionSucceeds 覆盖真实客户端的首发行为。
+//
+// core 首次同步时发出 `baseRevision: 0`(该字段初值),
+// JSON 里的 0 反序列化成指向 0 的 *int64 —— 不是 nil。
+// 若服务端只认 nil,新用户第一次同步就会 409,保险库永远传不上去。
+//
+// 与 TestFirstPushWithRevisionFails 配对:那条测 baseRevision=5
+// (客户端自称知道版本)必须 409;这条测 0(客户端不知道版本)必须成功。
+func TestFirstPushWithZeroBaseRevisionSucceeds(t *testing.T) {
+	srv, _ := newTestServer(t)
+	token := registerAndLogin(t, srv, "grace", "valid-password-99")
+
+	env := map[string]any{"ciphertext": "Y2lwaGVy", "nonce": "bm9uY2U=", "version": 1}
+	status, body := do(t, srv, "PUT", "/api/v1/vault", map[string]any{
+		"envelope": env, "updatedAt": time.Now().UnixMilli(),
+		"deviceId": "d", "baseRevision": 0,
+	}, token)
+	if status != http.StatusOK {
+		t.Fatalf("客户端首发传 baseRevision=0 应成功, 得到 %d: %v", status, body)
+	}
+
+	// 数据必须真的落进去了,且密文原样保留。
+	_, pull := do(t, srv, "GET", "/api/v1/vault", nil, token)
+	rec, _ := pull["record"].(map[string]any)
+	if rec == nil {
+		t.Fatalf("首发后应能拉回记录, 得到 %v", pull)
+	}
+	stored, _ := rec["envelope"].(map[string]any)
+	if stored == nil || stored["ciphertext"] != "Y2lwaGVy" {
+		t.Fatalf("密文应原样保存, 得到 %v", rec["envelope"])
+	}
+
+	// 紧接着用正确的 baseRevision 写第二次,应得到 revision 2。
+	status, body = do(t, srv, "PUT", "/api/v1/vault", map[string]any{
+		"envelope": env, "updatedAt": time.Now().UnixMilli(),
+		"deviceId": "d", "baseRevision": 1,
+	}, token)
+	if status != http.StatusOK {
+		t.Fatalf("带正确 baseRevision 的二次写入应成功, 得到 %d: %v", status, body)
+	}
+	if rev, _ := body["revision"].(float64); rev != 2 {
+		t.Fatalf("二次写入后 revision 应为 2, 得到 %v", body["revision"])
+	}
+}
+
 func TestCORS(t *testing.T) {
 	srv, _ := newTestServer(t)
 
