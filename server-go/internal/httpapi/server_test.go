@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -266,14 +267,30 @@ func TestVaultPullPushRoundTrip(t *testing.T) {
 	if got == nil {
 		t.Fatalf("envelope 结构异常: %v", record["envelope"])
 	}
-	for k, want := range envelope {
-		if got[k] != want {
-			t.Errorf("envelope 字段 %s 不一致: 期望 %v, 得到 %v", k, want, got[k])
-		}
+	// 注意:比较必须用 reflect.DeepEqual 而非 got[k] != want。
+	// envelope 经 JSON 解析后所有数字都成了 float64,而期望值里的
+	// 字面量是 int——直接用 != 比接口值永远不相等(1.0 != 1),
+	// 会让人误以为密文往返出了问题。
+	if !reflect.DeepEqual(got, normalizeNumbers(envelope)) {
+		t.Errorf("envelope 往返后不一致:\n期望 %v\n得到 %v", envelope, got)
 	}
 	if record["deviceId"] != "web-1" {
 		t.Errorf("deviceId 应被保留, 得到 %v", record["deviceId"])
 	}
+}
+
+// normalizeNumbers 把 map 里的 int 值转成 float64,
+// 让它与 JSON 解析后的形态可比。
+func normalizeNumbers(in map[string]any) map[string]any {
+	out := make(map[string]any, len(in))
+	for k, v := range in {
+		if n, ok := v.(int); ok {
+			out[k] = float64(n)
+			continue
+		}
+		out[k] = v
+	}
+	return out
 }
 
 // TestVaultConditionalWriteConflict 是防丢数据的关键测试。

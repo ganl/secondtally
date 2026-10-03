@@ -211,13 +211,23 @@ func hashPassword(password string, salt []byte) ([]byte, error) {
 	return scrypt.Key([]byte(normalized), salt, scryptN, scryptR, scryptP, scryptKeyLen)
 }
 
+// passwordLength 返回归一化后的口令长度。
+//
+// 必须用归一化后的结果而非原始输入:全角"ＡＢＣ１２３"归一化后是
+// "abc123",只有 6 字符。直接在原始输入上量长度会把合法的弱口令
+// 判成"不足 8 位",让用全角输入法的用户根本注册不了。
+func passwordLength(password string) int {
+	return len([]rune(normalizeNFKC(password)))
+}
+
 // Register 注册账户。userID 由调用方提供(小程序传 openid,Web 端传用户名)。
 func (s *Service) Register(userID, password string) (string, error) {
 	id := strings.TrimSpace(userID)
 	if id == "" || len(id) > 128 {
 		return "", ErrInvalidUserID
 	}
-	if len(password) < 8 {
+	// 强度校验看归一化后的长度,与 hashPassword 保持同一把尺子。
+	if passwordLength(password) < 8 {
 		return "", ErrWeakPassword
 	}
 

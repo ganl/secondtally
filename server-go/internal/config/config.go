@@ -28,7 +28,7 @@ type Config struct {
 const (
 	defaultPort    = 8787
 	defaultHost    = "127.0.0.1"
-	defaultDataDir = "./server/data"
+	defaultDataDir = "./server-go/data"
 	defaultTTLSecs = 3600
 
 	// devSecret 仅用于本地开发,生产环境会拒绝使用它。
@@ -45,7 +45,10 @@ type Getenv func(string) string
 // 返回错误时调用方必须直接退出——不要降级到"部分可用"的状态,
 // 那意味着用户以为自己在安全配置下运行。
 func Load(getenv Getenv) (*Config, error) {
-	isProduction := getenv("NODE_ENV") == "production"
+	// 优先读 AEGIS_ENV(语义清晰),兼容 NODE_ENV。
+	// 支持后者是因为同一份 .env 要能被 Node 版与 Go 版共用,
+	// 迁移期间不必改环境变量名。
+	isProduction := getenv("AEGIS_ENV") == "production" || getenv("NODE_ENV") == "production"
 
 	tokenSecret := strings.TrimSpace(getenv("AEGIS_TOKEN_SECRET"))
 	if tokenSecret == "" {

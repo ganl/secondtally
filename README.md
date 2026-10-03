@@ -44,7 +44,7 @@
 
 ```
 packages/core/     密码学与 TOTP 引擎,零平台依赖,三端共用
-server/          同步服务端(零依赖,Node 内置 http)
+server-go/         同步服务端(Go,编译为单个静态二进制)
 apps/miniprogram/   微信小程序
 apps/web/          Web 端
 apps/extension/     MV3 浏览器扩展
@@ -55,18 +55,30 @@ docs/DEPLOY.md      自部署指南
 
 ```bash
 npm install
-npm run build      # 构建 core / web / ext / server
-npm test           # 74 项测试
+npm run build        # 构建 core / web / ext / server
+npm test             # 74 项测试(三端)
+npm run test:server  # 52 项服务端测试(Go)
 npm run typecheck
+```
+
+服务端需要 [Go](https://go.dev/dl/) 1.22+;国内网络建议先配置代理
+(`proxy.golang.org` 直连会返回 502):
+
+```bash
+go env -w GOPROXY=https://goproxy.cn,https://mirrors.aliyun.com/goproxy/,direct
 ```
 
 ### 本地跑服务端
 
 ```bash
 cp .env.example .env
+npm run build:server      # 产出 server-go/dist/aegis-server
 npm run start:server
 curl http://127.0.0.1:8787/health
 ```
+
+服务端的运行期**不需要 Node** —— 目标机器上只要有那个二进制文件即可。
+详见 [docs/DEPLOY.md](docs/DEPLOY.md)。
 
 ### 小程序
 
@@ -92,6 +104,19 @@ npx serve apps/web/dist
 备份策略与常见问题。
 
 数据目录有两个文件需要备份:`vaults.db`(密文)与 `credentials.json`(账号凭据)。
+
+## 文档
+
+| 文档 | 内容 |
+| --- | --- |
+| [README.md](README.md) | 安全模型与关键实现选择(本文) |
+| [docs/STATUS.md](docs/STATUS.md) | **决策记录、未决事项、必须守住的技术契约** |
+| [docs/DESIGN.md](docs/DESIGN.md) | 界面设计系统与关键设计决策(待评审) |
+| [docs/PORTING.md](docs/PORTING.md) | 移植到抖音等其他平台的评估 |
+| [docs/DEPLOY.md](docs/DEPLOY.md) | 部署与运维 |
+
+改动代码前建议先读 `docs/STATUS.md` 第四节 —— 那里记录了几处
+**改动后会静默失效、且类型系统不会报错**的隐式契约。
 
 ## 已知限制
 

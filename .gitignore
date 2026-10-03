@@ -6,11 +6,13 @@ dist/
 .tmp/
 
 # 运行时数据,可能含密文与本地配置,一律不入库
+# 注意:服务已迁移到 server-go/(Go 实现),server/ 是已废弃的 TypeScript 版,
+# 目录里可能残留本地测试数据与旧构建产物。
+server/
 server/data/
 server-go/data/
 aegis-server
 aegis-server.exe
-server/.env
 server-go/.env
 .env
 .env.local

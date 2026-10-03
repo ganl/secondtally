@@ -67,7 +67,24 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("PUT /api/v1/vault", s.handlePush)
 	mux.HandleFunc("GET /api/v1/sync-log", s.handleSyncLog)
 
+	// 兜底:未被上面任何模式匹配的请求。
+	//
+	// 不加这个,Go 的 ServeMux 会返回纯文本 "404 page not found",
+	// 客户端 JSON 解析直接失败。统一成 JSON 错误结构后,
+	// 客户端拿到的形状与业务错误一致,能正确处理。
+	//
+	// 实测(Go 1.26)确认:注册了 "/" 之后,路径存在但方法不匹配的请求
+	// 也会落到这里,而不是返回 405。所以这个 handler 覆盖了全部未匹配情况。
+	// 这比试图区分 404/405 更简单,也更符合前端预期——客户端只需要知道
+	// "这个端点不可用",不需要精确的错误码。
+	mux.HandleFunc("/", s.handleFallback)
+
 	return s.withHeaders(mux)
+}
+
+// handleFallback 处理所有未被显式注册的请求。
+func (s *Server) handleFallback(w http.ResponseWriter, _ *http.Request) {
+	writeError(w, http.StatusNotFound, "NOT_FOUND", "端点不存在或请求方法不被支持")
 }
 
 // withHeaders 统一施加 CORS 与安全响应头。

@@ -27,19 +27,41 @@
 
 ### 1. 构建
 
+服务端是 **Go 实现**,构建产物是单个静态二进制,目标机器不需要装 Node。
+
 ```bash
 git clone <你的仓库> /opt/aegis
 cd /opt/aegis
+
+# 依赖:Go 1.22+ 与 Node 20+。
+# Node 只用于构建前端产物,服务端运行期不依赖它。
 npm ci
-npm run build          # 依次构建 core / web / ext / server
+npm run build          # core / web / ext / server 全部构建
 ```
 
 产物位置:
 
-- `server/dist/index.js` — 服务端
-- `apps/web/dist/` — Web 端静态文件
-- `apps/extension/dist/` — 浏览器扩展(手动加载,不部署)
-- `apps/miniprogram/` — 微信小程序(用开发者工具打开)
+| 路径 | 说明 |
+| --- | --- |
+| `server-go/dist/aegis-server` | **服务端二进制**(约 17 MB,Linux 版需自行 `GOOS=linux go build`) |
+| `apps/web/dist/` | Web 端静态文件 |
+| `apps/extension/dist/` | 浏览器扩展(手动加载,不部署) |
+| `apps/miniprogram/` | 微信小程序(用开发者工具打开) |
+
+只构建服务端:
+
+```bash
+npm run build:server     # 等价于 cd server-go && go build -o dist/aegis-server ./cmd/aegis-server
+npm run test:server      # 跑 52 项 Go 测试
+```
+
+> **国内网络注意**:`proxy.golang.org` 直连通常返回 502,先执行:
+> `go env -w GOPROXY=https://goproxy.cn,https://mirrors.aliyun.com/goproxy/,direct`
+
+> **交叉编译**:部署到 Linux 服务器时在本地构建即可,
+> `GOOS=linux GOARCH=amd64 go build -o dist/aegis-server ./cmd/aegis-server`。
+> 项目使用纯 Go 的 SQLite 驱动(`modernc.org/sqlite`),**无需 CGO**,
+> 交叉编译不需要额外的 C 工具链。
 
 ### 2. 配置
 
@@ -51,7 +73,7 @@ openssl rand -hex 32      # 生成令牌密钥
 编辑 `.env`,生产环境至少改这几项:
 
 ```ini
-NODE_ENV=production
+AEGIS_ENV=production
 HOST=127.0.0.1              # 只监听回环,由反代对外
 AEGIS_TOKEN_SECRET=<上面生成的值>
 AEGIS_ALLOWED_ORIGINS=https://2fa.example.com
@@ -60,6 +82,21 @@ AEGIS_DATA_DIR=/var/lib/aegis
 
 `AEGIS_ALLOWED_ORIGINS` 必须写你的真实站点来源,不能留 `*`。
 生产环境若留通配,任何网站都能读取用户的同步接口。
+
+> `NODE_ENV` 作为兼容项保留(等价于 `AEGIS_ENV=production`),
+> 便于迁移期同一份 `.env` 供新旧两版共用。
+
+**启动即校验**——以下情况服务会直接退出而不是降级运行:
+
+| 情况 | 提示信息 |
+| --- | --- |
+| 缺 `AEGIS_TOKEN_SECRET` | 生产环境必须设置,附生成命令 |
+| 用开发默认密钥 | 生产环境拒绝使用开发默认密钥 |
+| 密钥短于 32 字符 | 至少需要 32 个字符 |
+| CORS 含 `*` | 不允许通配符,请配置具体来源 |
+| CORS 无任何 `https://` 来源 | 生产环境要求 https |
+| `PORT` 不在 1–65535 | 端口非法 |
+| `AEGIS_TOKEN_TTL` 越界 | 必须在 60 到 2592000 秒之间 |
 
 完整配置项见 `.env.example` 内的注释。
 
@@ -77,9 +114,14 @@ Type=simple
 User=aegis
 Group=aegis
 WorkingDirectory=/opt/aegis
-ExecStart=/usr/bin/node server/dist/index.js
+ExecStart=/opt/aegis/server-go/dist/aegis-server
 Restart=always
 RestartSec=3
+
+# 收到 SIGTERM 后给在途请求 10 秒完成再退出,
+# 避免用户在同步写入中途被断开而误以为失败。
+KillSignal=SIGTERM
+TimeoutStopSec=15
 
 # 安全加固:服务只需要读代码和写数据目录
 NoNewPrivileges=true
@@ -89,6 +131,8 @@ ProtectHome=true
 ReadWritePaths=/var/lib/aegis
 ProtectKernelTunables=true
 ProtectControlGroups=true
+# Go 运行时需要网络与文件系统,故未限制 AF_UNIX 之外更多族;
+# 若部署环境不需要 IPv6,可从下表去掉 AF_INET6。
 RestrictAddressFamilies=AF_INET AF_INET6
 
 EnvironmentFile=/opt/aegis/.env
@@ -104,6 +148,11 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now aegis
 sudo systemctl status aegis
 ```
+
+> **迁移提示**:旧的 Node 版数据目录是 `server/data/`,新版是 `server-go/data/`(默认值)。
+> 两者文件名相同(`vaults.db` 与 `credentials.json`),**可直接复制**——
+> scrypt 参数、令牌格式、数据库 schema 都保持了向后兼容。
+> 但 `AEGIS_TOKEN_SECRET` 必须一致,否则已签发的令牌全部失效,用户需重新登录。
 
 ### 4. Nginx 反代
 

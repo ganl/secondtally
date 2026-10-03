@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 )
 
 const testSecret = "test-only-token-secret-at-least-32-chars-long"
@@ -71,17 +72,40 @@ func TestRegisterRejectsWeakInput(t *testing.T) {
 	}
 }
 
-// TestVerifyIsCaseAndWidthInsensitive 验证 NFKC 归一化生效:
+// TestVerifyNormalizesFullWidth 验证 NFKC 归一化生效:
 // 全角与半角是同一视觉字符,归一化后应哈希成同一个值。
 func TestVerifyNormalizesFullWidth(t *testing.T) {
 	svc := newTestService(t)
 
-	if _, err := svc.Register("dave", "abc123"); err != nil {
+	// 用 8 个全角字符,归一化后正好 8 位,刚好越过强度门槛。
+	// 早先误用 6 位的"ａｂｃ１２３",它归一化后只有 6 字符,
+	// 被正确地判为"不足 8 位"——那是门槛在起作用,不是归一化坏了。
+	const password = "ａｂｃｄｅｆ１２"
+
+	normalized := normalizeNFKC(password)
+	if utf8.RuneCountInString(normalized) != 8 {
+		t.Fatalf("归一化后应为 8 个字符, 实得 %d (%q)", utf8.RuneCountInString(normalized), normalized)
+	}
+	// 归一化必须真的把全角变成半角,否则下面的 Verify 通过没有意义。
+	if normalized != "abcdef12" {
+		t.Fatalf("归一化结果错误: %q", normalized)
+	}
+
+	if _, err := svc.Register("dave", password); err != nil {
 		t.Fatalf("注册失败: %v", err)
 	}
-	// 全角 ＡＢＣ１２３ 与半角 abc123 在 NFKC 下等价。
-	if err := svc.Verify("dave", "ａｂｃ１２３"); err != nil {
-		t.Fatalf("全角口令应归一化后通过校验: %v", err)
+	// 用半角形式登录,应该能通过——用户可能这次用了全角,下次用了半角。
+	if err := svc.Verify("dave", "abcdef12"); err != nil {
+		t.Fatalf("半角口令应能校验全角注册的账户: %v", err)
+	}
+	// 再次用全角登录,同样应该通过。
+	if err := svc.Verify("dave", password); err != nil {
+		t.Fatalf("全角口令应能校验自己注册的账户: %v", err)
+	}
+	// 长度门槛仍要对归一化后的长度生效:
+	// 6 个全角字符归一化后仍是 6 位,必须被拒。
+	if _, err := svc.Register("erin", "ａｂｃ１２３"); !errors.Is(err, ErrWeakPassword) {
+		t.Fatalf("归一化后不足 8 位应被拒绝, 得到 %v", err)
 	}
 }
 
