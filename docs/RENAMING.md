@@ -9,7 +9,8 @@
 > **2026-10-04 更新:A、B 两级均已执行完毕,统一为 `twofa`。**
 > 用户拍板"A 级可以改掉,目前还没有发布上线" —— 这是唯一的安全窗口,
 > 已用掉。**从此刻起 A 级永久冻结。**
-> C 级 14 处仍**刻意保留 `Aegis` 字面**等主名定稿。见文末《执行记录》。
+> **C 级也已执行完毕(同日,主名定稿 `secondtally` 之后),见文末《执行记录》。**
+> **三级全部收敛完成,改名工作结束。**
 
 ## 分级标准
 
@@ -153,38 +154,42 @@ import "aegis/server/internal/auth"
 
 ---
 
-## C 级:展示层(14 处,最便宜,**刻意未改**)
+## C 级:展示层(14 处 + 1 处补漏,**已于 2026-10-04 执行完毕**)
 
 用户能看到的字面,改起来零风险。清单已按 2026-10-04 全量扫描更新,
 比初版多出 3 处。
 
-| # | 位置 | 当前值 |
-| --- | --- | --- |
-| 1 | `apps/miniprogram/pages/gate/index.wxml:3` | `<view class="title">Aegis</view>` |
-| 2 | `apps/miniprogram/app.json:15` | `navigationBarTitleText: "Aegis 2FA"` |
-| 3 | `apps/miniprogram/package.json:5` | `description: "Aegis 2FA 微信小程序端"` |
-| 4 | `apps/miniprogram/project.config.json:2` | `description: "Aegis 2FA 双重认证器"` |
-| 5 | `apps/extension/src/manifest.json:3` | `name: "Aegis 2FA"` |
-| 6 | `apps/extension/src/manifest.json:15` | `default_title: "Aegis 2FA"` |
-| 7 | `apps/extension/src/popup.html:5` | `<title>Aegis 2FA</title>` |
-| 8 | `apps/extension/src/popup.ts:159` | `Aegis · N 个账号` |
-| 9 | `apps/web/index.html:7` | `<title>Aegis 2FA</title>` |
-| 10 | `apps/web/src/main.ts:68` | `<h1>Aegis 2FA</h1>` |
-| 11 | `apps/web/src/main.ts:222` | `<h1>Aegis 2FA</h1>` |
-| 12 | `README.md:1` | `# Aegis 2FA` |
-| 13 | `docs/DEPLOY.md:191` | `Description=Aegis 2FA Sync Server` |
-| 14 | `server-go/go.mod:1` 与 `cmd/twofa-server/main.go:1` | 文件头注释 |
+| # | 位置 | 改名前的值 | **改为** |
+| --- | --- | --- | --- |
+| 1 | `apps/miniprogram/pages/gate/index.wxml:3` | `<view class="title">Aegis</view>` | `<view class="title">SecondTally</view>` |
+| 2 | `apps/miniprogram/app.json:15` | `navigationBarTitleText: "Aegis 2FA"` | `"SecondTally"` |
+| 3 | `apps/miniprogram/package.json:5` | `description: "Aegis 2FA 微信小程序端"` | `"SecondTally 微信小程序端"` |
+| 4 | `apps/miniprogram/project.config.json:2` | `description: "Aegis 2FA 双重认证器"` | `"SecondTally 双重认证器"` |
+| 5 | `apps/extension/src/manifest.json:3` | `name: "Aegis 2FA"` | `"SecondTally"` |
+| 6 | `apps/extension/src/manifest.json:15` | `default_title: "Aegis 2FA"` | `"SecondTally"` |
+| 7 | `apps/extension/src/popup.html:5` | `<title>Aegis 2FA</title>` | `<title>SecondTally</title>` |
+| 8 | `apps/extension/src/popup.ts:159` | `` `Aegis · ${n} 个账号` `` | `` `SecondTally · ${n} 个账号` `` |
+| 9 | `apps/web/index.html:7` | `<title>Aegis 2FA</title>` | `<title>SecondTally — OTP 验证器 · 双因子动态口令</title>` |
+| 10 | `apps/web/src/main.ts:68` | `el('h1', { text: 'Aegis 2FA' })` | `el('h1', { text: 'SecondTally' })` |
+| 11 | `apps/web/src/main.ts:222` | 同上 | 同上 |
+| 12 | `README.md:1` | `# Aegis 2FA` | `# SecondTally` |
+| 13 | `docs/DEPLOY.md:191` | `Description=Aegis 2FA Sync Server` | `Description=SecondTally Sync Server` |
+| 14 | `server-go/go.mod:1` 与 `cmd/twofa-server/main.go:1` | 文件头注释 | 改为 `SecondTally` |
+| **15** | **`.env.example:2`** | `# Aegis 2FA 同步服务配置` | `# SecondTally 同步服务配置` |
 
-**这些恰恰是主名定稿后必须改的**,也是唯一"改完立刻见效"的部分。
+**第 15 处是执行时新发现的** —— 前一轮全量扫描漏掉了点文件里的**注释头**
+(此前只修了该文件里的 `AEGIS_*` 变量名,没注意第 2 行的品牌名注释)。
+再次印证 §B 级那节的教训:**点文件必须单独扫。**
 
-**为什么不现在随手改掉**:微信小程序**年度改名上限 2 次**(见
-`docs/NAMING.md`)。现在填一个占位名,等主名定稿再改,会白白消耗
-一次名额 —— 而小程序名称正是最需要留给主名的位置。其余各端同理:
-改两次不如一次到位。
+**各位置用词不统一的说明(刻意的)**:
 
-**建议**:这里**不要**抽成常量。C 级就是要分散在各处,
-集中反而增加改动量 —— 集中了就得改一个文件而非只改文案。
-让它们保持字面量,`grep -i <新名>` 一次就能全部找到。
+- 小程序导航栏标题、扩展名、h1 用**纯品牌名** `SecondTally` —— 这些是品牌位
+- Web `<title>` 用**品牌名 + 品类词** —— title 同时是搜索引擎摘要位
+- 微信**注册**名称另定(品牌词 + 品类词,见 `docs/NAMING.md` §1.4),
+  与 `app.json` 的 `navigationBarTitleText` 是两件事
+
+**为什么不抽成常量**:C 级就是要分散在各处,集中反而增加改动量。
+保持字面量,`grep -i <新名>` 一次就能全部找到。
 
 ---
 
@@ -206,21 +211,25 @@ import "aegis/server/internal/auth"
 3. ~~**B3 的 16 处引用本可以更集中**~~ —— 已随 B 级一起改完,
    仍是散在 `main.ts`,但已是纯内部命名,改错代价低。
 
-## 定名后的收敛动作(只剩 C 级)
+## 收敛动作(三级全部完成)
 
-A、B 两级均已于 2026-10-04 完成,定名后**只需改 C 级 14 处文案**:
-
-| 步骤 | 动作 | 风险 |
+| 步骤 | 动作 | 状态 |
 | --- | --- | --- |
-| 1 | C 级 14 处改文案(上表) | 无 |
-| 2 | 四端重新构建 + `npm test` | 无 |
+| 1 | A 级 7 处存储键 → `twofa.*` + 护栏测试 | ✅ 2026-10-04(`4179a90`) |
+| 2 | B 级 38 文件代码标识符 → `twofa` | ✅ 2026-10-04(`cb1af41`) |
+| 3 | C 级 14+1 处展示文案 → `SecondTally` | ✅ 2026-10-04 |
+| 4 | 四端重新构建 + `npm test` + `go test` | ✅ 全通过 |
 
-**A 级从此刻起冻结,不再参与任何改名。**
+**A 级从此刻起冻结,不再参与任何改名。改名工作到此结束。**
 
-改完后 `grep -rni aegis` 应当只剩:
-`docs/NAMING.md` 与 `docs/RENAMING.md` 里对"Aegis 竞品"的历史论述、
-以及 `.gitignore` 里的 `*.aegisvault`
-(那是**竞品 Aegis 的导出文件格式**,与本项目品牌名无关,不该改)。
+改完后 `grep -rni aegis` 只剩三处,且都不该改:
+
+1. `docs/NAMING.md` 与 `docs/RENAMING.md` / `docs/STATUS.md` 里
+   对"Aegis 竞品"的**历史论述** —— 那是改名的**理由记录**,删了就没人知道当初为什么改
+2. `.gitignore` 里的 `*.aegisvault` —— 那是**竞品 Aegis 的导出文件格式**,与本项目品牌名无关
+3. 本文件 C 级表里的"改名前的值"列 —— 那是**改动记录**
+
+**源码与构建产物中的 `Aegis` 已归零**(实测 `apps/*/dist` 与 `apps/miniprogram/utils` 零残留)。
 
 ## 关于"要不要趁现在剥离存储键前缀"
 
@@ -346,3 +355,46 @@ Go 环境变量统一 `TWOFA_`。**这是语法限制不是偏好。**
 也就是说服务端的**入口源码在前面三个提交中一直缺席**,clone 下来无法构建。
 已改为锚定写法,现在 `git status` 能看到
 `?? server-go/cmd/twofa-server/main.go`。
+
+---
+
+## C 级执行记录(2026-10-04,主名定稿 `secondtally` 之后)
+
+### 用词规则(刻意不统一)
+
+| 位置                        | 用什么                     | 理由                        |
+| ------------------------- | ----------------------- | ------------------------- |
+| 小程序导航栏 / 扩展名 / Web h1     | 纯品牌名 `SecondTally`       | 品牌位                       |
+| Web `<title>`             | 品牌名 + 品类词               | title 同时是搜索引擎摘要位          |
+| 微信**注册**名称                | 品牌词 + 品类词(另定)           | 见 `docs/NAMING.md` §1.4    |
+
+**注意**:`app.json` 的 `navigationBarTitleText` 是页面标题栏文字,
+与**微信后台注册的小程序名称是两件事**,不要混。
+
+### 执行时新发现的一处漏网
+
+`.env.example:2` 的注释头 `# Aegis 2FA 同步服务配置` —— 前一轮只修了该文件里的
+`AEGIS_*` 变量名,没注意第 2 行的品牌名注释。
+**再次印证 B 级那节的教训:点文件必须单独扫。**
+
+### 验证结果
+
+| 项 | 结果 |
+| --- | --- |
+| `npm run typecheck` | 通过 |
+| `npm test` | **78 项**全通过 |
+| `gofmt -l .` | 空 |
+| `go build ./...` / `go vet ./...` | 干净 |
+| `go test ./...` | auth / config / httpapi / store 全 ok(**顶层 68 项**,含子测试 92) |
+| 四端构建 | 全部成功,扩展清单校验输出 `SecondTally v0.1.0 (manifest v3)` |
+| 产物残留 | `apps/extension/dist` · `apps/web/dist` · `apps/miniprogram/utils` **零 `Aegis`** |
+| 源码残留 | 仅剩 `docs/` 里的历史论述与本文的改动记录(见上文,不该改) |
+
+**顺带修正文档里的过期数字**:`README.md` 原写"74 项测试(三端)/ 52 项服务端测试"
+→ 已更正为 **78 项前端 / 68 项 Go**;`docs/STATUS.md` 的"52 项"同为过期值。
+
+### 遗留(未在本轮处理)
+
+`LICENSE` 文件缺失。**没有许可证 = 默认"保留所有权利",严格说不构成开源发布。**
+客户端与服务端的授权需求不同(服务端若要用 AGPL-3.0 阻止闭源商用,
+客户端通常用 MIT / Apache-2.0),需项目所有者拍板后添加。

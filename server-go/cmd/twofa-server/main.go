@@ -1,4 +1,4 @@
-// Command twofa-server 是 Aegis 2FA 的同步服务。
+// Command twofa-server 是 SecondTally 的同步服务。
 //
 // 它只做一件事:把密文安全地搬运给该看它的人。
 // 它无法解密任何内容,也不需要知道主密码是什么。

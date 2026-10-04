@@ -156,7 +156,7 @@ function renderRecovery(codes: string[]): void {
 function renderVault(entries: Entry[]): void {
   const header = el('header', { class: 'header' });
   header.append(
-    el('strong', { text: `Aegis · ${entries.length} 个账号` }),
+    el('strong', { text: `SecondTally · ${entries.length} 个账号` }),
     button('锁定', 'ghost', () => void send({ type: 'twofa:lock' }).then(() => main())),
   );
 

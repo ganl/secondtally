@@ -12,7 +12,7 @@
   "window": {
     "backgroundTextStyle": "light",
     "navigationBarBackgroundColor": "#111827",
-    "navigationBarTitleText": "Aegis 2FA",
+    "navigationBarTitleText": "SecondTally",
     "navigationBarTextStyle": "white"
   },
   "permission": {

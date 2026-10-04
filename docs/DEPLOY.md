@@ -188,7 +188,7 @@ TWOFA_DATABASE_URL=postgres://twofa:密码@127.0.0.1:5432/twofa?sslmode=require
 
 ```ini
 [Unit]
-Description=Aegis 2FA Sync Server
+Description=SecondTally Sync Server
 After=network.target
 
 [Service]

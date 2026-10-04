@@ -65,7 +65,7 @@ function renderGate() {
   const root = clearApp();
   root.append(
     el('div', { class: 'brand' }, [
-      el('h1', { text: 'Aegis 2FA' }),
+      el('h1', { text: 'SecondTally' }),
       el('span', { class: 'tag', text: '端到端加密的双重认证器' }),
     ]),
   );
@@ -219,7 +219,7 @@ function renderVault() {
 
   const topbar = el('div', { class: 'topbar' });
   const brand = el('div', { class: 'brand', style: 'margin:0' }, [
-    el('h1', { text: 'Aegis 2FA' }),
+    el('h1', { text: 'SecondTally' }),
   ]);
 
   const syncLabel = el('span', { class: 'sync-state' });

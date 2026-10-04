@@ -1,5 +1,5 @@
 {
-  "description": "Aegis 2FA 双重认证器",
+  "description": "SecondTally 双重认证器",
   "miniprogramRoot": "./",
   "compileType": "miniprogram",
   "appid": "请替换为你的小程序AppID",
