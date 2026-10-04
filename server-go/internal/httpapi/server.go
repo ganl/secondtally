@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
 // Package httpapi 实现 HTTP 路由、CORS、限流与错误响应。
 //
 // 安全要点:

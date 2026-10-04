@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
 // Package auth 实现服务端身份认证。
 //
 // 核心安全设计:服务端身份与用户主密码严格分离。

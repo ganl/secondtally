@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
 // Package store 是密文存储层。
 //
 // 最重要的设计约束:这个表里只允许出现密文。

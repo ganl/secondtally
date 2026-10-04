@@ -1,0 +1,23 @@
+# 统一行尾为 LF。
+#
+# 为什么必须显式声明:本仓库在 Windows 上开发,而 Go / Node 工具链都按 LF 生成文件。
+# 一旦某个脚本用文本模式写文件(Python 的 open() 默认会把 \n 转成 \r\n),
+# 整份文件的行尾就被改写 —— gofmt -l 会把所有文件都列出来,
+# 而且 git diff 会显示"整个文件被替换"。这个坑实际踩过一次。
+* text=auto eol=lf
+
+# 二进制文件不做任何转换
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.woff binary
+*.woff2 binary
+*.ttf  binary
+*.zip  binary
+*.gz   binary
+
+# 锁文件与构建产物:不要 diff,也不要合并
+package-lock.json  -diff linguist-generated
+*.tsbuildinfo      binary

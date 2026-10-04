@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
 // Package config 负责读取与校验启动配置。
 //
 // 设计原则:启动即校验。缺失或使用弱默认值时直接退出,

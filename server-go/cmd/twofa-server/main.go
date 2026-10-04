@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
 // Command twofa-server 是 SecondTally 的同步服务。
 //
 // 它只做一件事:把密文安全地搬运给该看它的人。
