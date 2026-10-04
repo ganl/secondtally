@@ -14,17 +14,17 @@ import (
 // 让测试强制要求外部服务会导致"克隆下来跑不起来"。
 // 需要验证 PG 行为时用下面一行启动本地实例:
 //
-//	docker run -d --name aegis-pg -e POSTGRES_PASSWORD=postgres \
-//	  -e POSTGRES_DB=aegis_test -p 5433:5432 postgres:16
-//	AEGIS_TEST_POSTGRES="postgres://postgres:postgres@127.0.0.1:5433/aegis_test?sslmode=disable" go test ./...
-func postgresDSN() string { return os.Getenv("AEGIS_TEST_POSTGRES") }
+//	docker run -d --name twofa-pg -e POSTGRES_PASSWORD=postgres \
+//	  -e POSTGRES_DB=twofa_test -p 5433:5432 postgres:16
+//	TWOFA_TEST_POSTGRES="postgres://postgres:postgres@127.0.0.1:5433/twofa_test?sslmode=disable" go test ./...
+func postgresDSN() string { return os.Getenv("TWOFA_TEST_POSTGRES") }
 
 // newPostgresRepo 打开一个连到测试库的 Repository,并清空两张表。
 func newPostgresRepo(t *testing.T) *Repository {
 	t.Helper()
 	dsn := postgresDSN()
 	if dsn == "" {
-		t.Skip("未设置 AEGIS_TEST_POSTGRES,跳过 PostgreSQL 集成测试")
+		t.Skip("未设置 TWOFA_TEST_POSTGRES,跳过 PostgreSQL 集成测试")
 	}
 	repo, err := Open(Options{Dialect: DialectPostgres, PostgresDSN: dsn})
 	if err != nil {

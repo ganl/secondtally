@@ -91,7 +91,7 @@ function renderCreate(): void {
     error.textContent = '';
     submit.disabled = true;
     const response = await send<{ recoveryCodes: string[] }>({
-      type: 'aegis:create',
+      type: 'twofa:create',
       password: password.value,
       confirm: confirm.value,
     });
@@ -123,7 +123,7 @@ function renderUnlock(): void {
       error.textContent = '请输入主密码';
       return;
     }
-    const response = await send({ type: 'aegis:unlock', password: password.value });
+    const response = await send({ type: 'twofa:unlock', password: password.value });
     if (!response.ok) {
       error.textContent = response.error ?? '解锁失败';
       return;
@@ -157,7 +157,7 @@ function renderVault(entries: Entry[]): void {
   const header = el('header', { class: 'header' });
   header.append(
     el('strong', { text: `Aegis · ${entries.length} 个账号` }),
-    button('锁定', 'ghost', () => void send({ type: 'aegis:lock' }).then(() => main())),
+    button('锁定', 'ghost', () => void send({ type: 'twofa:lock' }).then(() => main())),
   );
 
   const addBtn = button('添加账号', 'primary', () => renderAddForm(entries));
@@ -188,7 +188,7 @@ function renderVault(entries: Entry[]): void {
 
     const removeBtn = button('删除', 'ghost danger', () => {
       if (!confirm(`删除 ${entry.issuer || entry.account}?`)) return;
-      void send({ type: 'aegis:remove', id: entry.id }).then(() => main());
+      void send({ type: 'twofa:remove', id: entry.id }).then(() => main());
     });
 
     item.append(
@@ -219,7 +219,7 @@ function renderAddForm(entries: Entry[]): void {
     error.textContent = '';
     submit.disabled = true;
     const response = await send({
-      type: 'aegis:addManual',
+      type: 'twofa:addManual',
       issuer: issuer.value.trim(),
       account: account.value.trim(),
       // 去掉用户粘贴时可能带进来的空格与连字符
@@ -250,7 +250,7 @@ async function fillCurrentPage(): Promise<void> {
   const id = tabs[0]?.id;
   if (id === undefined) return;
   try {
-    await chrome.tabs.sendMessage(id, { type: 'aegis:page:fill' });
+    await chrome.tabs.sendMessage(id, { type: 'twofa:page:fill' });
   } catch {
     // chrome:// 等页面不允许注入内容脚本,忽略
   }
@@ -261,15 +261,15 @@ async function fillCurrentPage(): Promise<void> {
 async function main(): Promise<void> {
   renderLoading();
   try {
-    const has = await send<boolean>({ type: 'aegis:hasVault' });
+    const has = await send<boolean>({ type: 'twofa:hasVault' });
     if (!has.ok) return renderError(has.error ?? '无法读取保险库状态');
     if (!has.data) return renderCreate();
 
-    const unlocked = await send<boolean>({ type: 'aegis:isUnlocked' });
+    const unlocked = await send<boolean>({ type: 'twofa:isUnlocked' });
     if (!unlocked.ok) return renderError(unlocked.error ?? '无法读取解锁状态');
     if (!unlocked.data) return renderUnlock();
 
-    const list = await send<Entry[]>({ type: 'aegis:list' });
+    const list = await send<Entry[]>({ type: 'twofa:list' });
     // locked 表示锁定超时等边界情况,回到解锁页而不是报错
     if (!list.ok) return list.error === 'locked' ? renderUnlock() : renderError(list.error ?? '读取失败');
     if (!list.data) return renderUnlock();

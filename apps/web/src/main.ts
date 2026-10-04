@@ -19,7 +19,7 @@ import {
   formatRelative,
   parseOtpAuthUri,
   type OtpEntry,
-} from '@aegis/core';
+} from '@twofa/core';
 import { bootstrap } from './platform.js';
 
 const app = document.getElementById('app')!;
@@ -70,7 +70,7 @@ function renderGate() {
     ]),
   );
 
-  void window.aegis.vault.hasVault().then((exists) => {
+  void window.twofa.vault.hasVault().then((exists) => {
     if (exists) renderUnlock(root);
     else renderCreate(root);
   });
@@ -113,7 +113,7 @@ function renderCreate(root: HTMLElement) {
     submit.disabled = true;
     submit.textContent = '正在创建…';
     try {
-      const codes = await window.aegis.vault.create(pwInput.value, confirmInput.value);
+      const codes = await window.twofa.vault.create(pwInput.value, confirmInput.value);
       // 立即清空 DOM 里的密码
       pwInput.value = '';
       confirmInput.value = '';
@@ -150,7 +150,7 @@ function renderUnlock(root: HTMLElement) {
     submit.disabled = true;
     submit.textContent = '正在解锁…';
     try {
-      await window.aegis.vault.unlock(pwInput.value);
+      await window.twofa.vault.unlock(pwInput.value);
       pwInput.value = '';
       renderVault();
     } catch (error) {
@@ -215,7 +215,7 @@ let searchQuery = '';
 
 function renderVault() {
   const root = clearApp();
-  const vault = window.aegis.vault;
+  const vault = window.twofa.vault;
 
   const topbar = el('div', { class: 'topbar' });
   const brand = el('div', { class: 'brand', style: 'margin:0' }, [
@@ -350,7 +350,7 @@ function renderVault() {
   };
 
   const tick = () => {
-    if (!window.aegis.vault.isUnlocked()) {
+    if (!window.twofa.vault.isUnlocked()) {
       if (timer) clearInterval(timer);
       timer = null;
       renderGate();
@@ -405,7 +405,7 @@ function renderAddModal() {
     alert.style.display = 'none';
     submit.disabled = true;
     try {
-      await window.aegis.vault.addManual({
+      await window.twofa.vault.addManual({
         issuer: issuer.value,
         account: account.value,
         secret: secret.value,
@@ -455,7 +455,7 @@ function renderEntryModal(entry: OtpEntry) {
 
   const favBtn = el('button', { class: 'btn-ghost', text: entry.favorite ? '取消收藏' : '收藏' });
   favBtn.addEventListener('click', async () => {
-    await window.aegis.vault.toggleFavorite(entry.id);
+    await window.twofa.vault.toggleFavorite(entry.id);
     closeModal();
     renderVault();
   });
@@ -463,7 +463,7 @@ function renderEntryModal(entry: OtpEntry) {
   const delBtn = el('button', { class: 'btn-ghost btn-danger', text: '删除此账号' });
   delBtn.addEventListener('click', async () => {
     if (!confirm('确定删除?删除后需要重新扫码才能找回。')) return;
-    await window.aegis.vault.removeEntry(entry.id);
+    await window.twofa.vault.removeEntry(entry.id);
     closeModal();
     toast('已删除');
     renderVault();
@@ -489,7 +489,7 @@ function renderEntryModal(entry: OtpEntry) {
   openModal(entry.issuer, body);
 
   const timer2 = setInterval(() => {
-    const result = window.aegis.vault.generateCode(entry.id);
+    const result = window.twofa.vault.generateCode(entry.id);
     codeEl.innerHTML = '';
     codeEl.append(
       el('span', { class: 'code-sep', text: result.code.slice(0, 3) }),
@@ -518,8 +518,8 @@ function renderEntryModal(entry: OtpEntry) {
 
 function renderAuditModal() {
   const body = el('div');
-  const now = window.aegis.time.now();
-  const events = window.aegis.vault.listAudit();
+  const now = window.twofa.time.now();
+  const events = window.twofa.vault.listAudit();
 
   if (events.length === 0) {
     body.append(el('p', { class: 'hint', text: '暂无记录' }));
@@ -555,7 +555,7 @@ function renderAuditModal() {
 
 function renderSettingsModal() {
   const body = el('div');
-  const vault = window.aegis.vault;
+  const vault = window.twofa.vault;
 
   // 同步设置
   const accountInput = el('input', { type: 'text', placeholder: '多设备请填相同名称' });
@@ -575,7 +575,7 @@ function renderSettingsModal() {
     connectBtn.disabled = true;
     connectBtn.textContent = '连接中…';
     try {
-      await window.aegis.connectSync(
+      await window.twofa.connectSync(
         accountInput.value.trim(),
         pwInput.value,
         endpointInput.value.trim() || 'http://localhost:8787',
@@ -651,7 +651,7 @@ function renderSettingsModal() {
   // 锁定
   const lockBtn = el('button', { class: 'btn-ghost', text: '立即锁定' });
   lockBtn.addEventListener('click', async () => {
-    await window.aegis.vault.lock();
+    await window.twofa.vault.lock();
     closeModal();
     renderGate();
   });
@@ -664,7 +664,7 @@ function renderSettingsModal() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `aegis-vault-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `twofa-vault-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
     toast('已导出');
@@ -708,7 +708,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 void bootstrap().then(() => {
-  const vault = window.aegis.vault;
+  const vault = window.twofa.vault;
   if (vault.isUnlocked()) {
     renderVault();
   } else {

@@ -10,7 +10,7 @@
 /** 小程序没有 WebCrypto,需用 wx.getRandomBytes */
 declare const wx: any;
 
-import type { KeyValueStore, Scanner, Clipboard, CryptoRandom, SyncTransport } from '@aegis/core';
+import type { KeyValueStore, Scanner, Clipboard, CryptoRandom, SyncTransport } from '@twofa/core';
 
 /** 存储适配器:包一层 Promise,让 core 用统一的异步接口。 */
 export function createStore(): KeyValueStore {

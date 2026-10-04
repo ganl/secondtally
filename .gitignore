@@ -11,8 +11,12 @@ dist/
 server/
 server/data/
 server-go/data/
-aegis-server
-aegis-server.exe
+# Go 构建产物(二进制名与源码目录同名,必须加前导 / 锚定到具体位置——
+# 写成裸的 twofa-server 会连 server-go/cmd/twofa-server/ 源码目录一起忽略掉)。
+/twofa-server
+/twofa-server.exe
+/server-go/twofa-server
+/server-go/twofa-server.exe
 server-go/.env
 .env
 .env.local

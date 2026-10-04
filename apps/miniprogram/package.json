@@ -1,5 +1,5 @@
 {
-  "name": "@aegis/miniprogram",
+  "name": "@twofa/miniprogram",
   "version": "0.1.0",
   "private": true,
   "description": "Aegis 2FA 微信小程序端",
@@ -8,6 +8,6 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@aegis/core": "*"
+    "@twofa/core": "*"
   }
 }

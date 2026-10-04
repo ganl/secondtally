@@ -72,7 +72,7 @@ go env -w GOPROXY=https://goproxy.cn,https://mirrors.aliyun.com/goproxy/,direct
 
 ```bash
 cp .env.example .env
-npm run build:server      # 产出 server-go/dist/aegis-server
+npm run build:server      # 产出 server-go/dist/twofa-server
 npm run start:server
 curl http://127.0.0.1:8787/health
 ```
@@ -104,7 +104,7 @@ npx serve apps/web/dist
 数据库选型、备份策略与常见问题。
 
 存储层可选 **SQLite**(本地开发、单机小规模)或 **PostgreSQL**(实际部署)。
-不设 `AEGIS_DB_DRIVER` 时:开发环境默认 sqlite,生产环境默认 postgres,
+不设 `TWOFA_DB_DRIVER` 时:开发环境默认 sqlite,生产环境默认 postgres,
 显式设置始终优先。
 
 备份对象随模式而变:SQLite 备 `vaults.db`,PostgreSQL 用 `pg_dump`;

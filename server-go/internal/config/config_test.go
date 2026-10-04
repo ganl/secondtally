@@ -12,7 +12,7 @@ func env(m map[string]string) Getenv {
 
 func devBase(extra map[string]string) map[string]string {
 	m := map[string]string{
-		"AEGIS_ALLOWED_ORIGINS": "http://localhost:5173",
+		"TWOFA_ALLOWED_ORIGINS": "http://localhost:5173",
 	}
 	for k, v := range extra {
 		m[k] = v
@@ -22,18 +22,18 @@ func devBase(extra map[string]string) map[string]string {
 
 // prodBase 给出合法的生产环境基线,只把"被测的那个变量"留给用例自己填。
 //
-// 为什么抽出来:生产环境现在硬性要求 AEGIS_DATABASE_URL,
+// 为什么抽出来:生产环境现在硬性要求 TWOFA_DATABASE_URL,
 // 每个用例都手写全套配置的话,以后每加一条生产硬约束就要改十几处,
 // 而且漏改的那几处会以"错误的理由"通过——比如本该测密钥校验,
 // 却先撞上数据库连接串缺失,测试变成假绿。
 //
-// 刻意不设 AEGIS_TOKEN_SECRET:有几个用例正是要测密钥校验,
+// 刻意不设 TWOFA_TOKEN_SECRET:有几个用例正是要测密钥校验,
 // 由它们自己决定填什么或不填。
 func prodBase(extra map[string]string) map[string]string {
 	m := map[string]string{
-		"AEGIS_ENV":             "production",
-		"AEGIS_ALLOWED_ORIGINS": "https://2fa.example.com",
-		"AEGIS_DATABASE_URL":    "postgres://u:p@h:5432/aegis?sslmode=require",
+		"TWOFA_ENV":             "production",
+		"TWOFA_ALLOWED_ORIGINS": "https://2fa.example.com",
+		"TWOFA_DATABASE_URL":    "postgres://u:p@h:5432/twofa?sslmode=require",
 	}
 	for k, v := range extra {
 		m[k] = v
@@ -53,7 +53,7 @@ func TestLoadDevelopmentDefaults(t *testing.T) {
 		t.Errorf("默认应只监听本机, 得到 %q", cfg.Host)
 	}
 	if cfg.IsProduction {
-		t.Error("未设AEGIS_ENV 时不应判定为生产环境")
+		t.Error("未设TWOFA_ENV 时不应判定为生产环境")
 	}
 	if cfg.AccessTokenTTL.Seconds() != 3600 {
 		t.Errorf("默认令牌有效期应为 1 小时, 得到 %v", cfg.AccessTokenTTL)
@@ -68,16 +68,16 @@ func TestLoadDevelopmentDefaults(t *testing.T) {
 func TestProductionRejectsMissingSecret(t *testing.T) {
 	_, err := Load(env(prodBase(nil)))
 	if err == nil {
-		t.Fatal("生产环境缺少 AEGIS_TOKEN_SECRET 应拒绝启动")
+		t.Fatal("生产环境缺少 TWOFA_TOKEN_SECRET 应拒绝启动")
 	}
-	if !strings.Contains(err.Error(), "AEGIS_TOKEN_SECRET") {
+	if !strings.Contains(err.Error(), "TWOFA_TOKEN_SECRET") {
 		t.Errorf("错误信息应指明是哪个变量缺失: %v", err)
 	}
 }
 
 func TestProductionRejectsDevSecret(t *testing.T) {
 	_, err := Load(env(prodBase(map[string]string{
-		"AEGIS_TOKEN_SECRET": devSecret,
+		"TWOFA_TOKEN_SECRET": devSecret,
 	})))
 	if err == nil {
 		t.Fatal("生产环境使用开发默认密钥应被拒绝")
@@ -86,7 +86,7 @@ func TestProductionRejectsDevSecret(t *testing.T) {
 
 func TestProductionRejectsShortSecret(t *testing.T) {
 	_, err := Load(env(prodBase(map[string]string{
-		"AEGIS_TOKEN_SECRET": strings.Repeat("a", 31), // 差一个字符
+		"TWOFA_TOKEN_SECRET": strings.Repeat("a", 31), // 差一个字符
 	})))
 	if err == nil {
 		t.Fatal("密钥短于 32 字符应被拒绝")
@@ -95,7 +95,7 @@ func TestProductionRejectsShortSecret(t *testing.T) {
 
 func TestProductionRejectsWildcardCORS(t *testing.T) {
 	_, err := Load(env(prodBase(map[string]string{
-		"AEGIS_ALLOWED_ORIGINS": "*,https://2fa.example.com",
+		"TWOFA_ALLOWED_ORIGINS": "*,https://2fa.example.com",
 	})))
 	if err == nil {
 		t.Fatal("生产环境 CORS 通配符应被拒绝")
@@ -104,7 +104,7 @@ func TestProductionRejectsWildcardCORS(t *testing.T) {
 
 func TestProductionRequiresHTTPSOrigin(t *testing.T) {
 	_, err := Load(env(prodBase(map[string]string{
-		"AEGIS_ALLOWED_ORIGINS": "http://2fa.example.com", // 明文
+		"TWOFA_ALLOWED_ORIGINS": "http://2fa.example.com", // 明文
 	})))
 	if err == nil {
 		t.Fatal("生产环境没有任何 https 来源应被拒绝")
@@ -113,8 +113,8 @@ func TestProductionRequiresHTTPSOrigin(t *testing.T) {
 
 func TestProductionAcceptsHTTPSOrigin(t *testing.T) {
 	cfg, err := Load(env(prodBase(map[string]string{
-		"AEGIS_TOKEN_SECRET":    strings.Repeat("k", 64),
-		"AEGIS_ALLOWED_ORIGINS": "https://2fa.example.com, https://mini.example.com",
+		"TWOFA_TOKEN_SECRET":    strings.Repeat("k", 64),
+		"TWOFA_ALLOWED_ORIGINS": "https://2fa.example.com, https://mini.example.com",
 	})))
 	if err != nil {
 		t.Fatalf("合法生产配置应能加载: %v", err)
@@ -143,17 +143,17 @@ func TestPortValidation(t *testing.T) {
 
 func TestTokenTTLValidation(t *testing.T) {
 	for _, ttl := range []string{"0", "59", "2592001", "abc"} {
-		if _, err := Load(env(devBase(map[string]string{"AEGIS_TOKEN_TTL": ttl}))); err == nil {
+		if _, err := Load(env(devBase(map[string]string{"TWOFA_TOKEN_TTL": ttl}))); err == nil {
 			t.Errorf("非法 TTL %q 应被拒绝", ttl)
 		}
 	}
-	if _, err := Load(env(devBase(map[string]string{"AEGIS_TOKEN_TTL": "60"}))); err != nil {
+	if _, err := Load(env(devBase(map[string]string{"TWOFA_TOKEN_TTL": "60"}))); err != nil {
 		t.Errorf("TTL 下界 60 应被接受: %v", err)
 	}
 }
 
 func TestDataDirResolvedToAbsolute(t *testing.T) {
-	cfg, err := Load(env(devBase(map[string]string{"AEGIS_DATA_DIR": "./relative/data"})))
+	cfg, err := Load(env(devBase(map[string]string{"TWOFA_DATA_DIR": "./relative/data"})))
 	if err != nil {
 		t.Fatalf("加载失败: %v", err)
 	}
@@ -181,7 +181,7 @@ func TestNodeEnvCompatibility(t *testing.T) {
 // 回退到本地开发地址,而不是空列表(空列表会让浏览器全拒)。
 func TestBlankOriginListFallsBackToLocalhost(t *testing.T) {
 	cfg, err := Load(env(map[string]string{
-		"AEGIS_ALLOWED_ORIGINS": "   ",
+		"TWOFA_ALLOWED_ORIGINS": "   ",
 	}))
 	if err != nil {
 		t.Fatalf("加载失败: %v", err)
@@ -215,9 +215,9 @@ func TestDevDefaultsToSQLite(t *testing.T) {
 // 用户量上来后 SQLite 整库串行写会成为瓶颈,
 // 所以生产环境默认必须换成 PostgreSQL。
 func TestProductionDefaultsToPostgres(t *testing.T) {
-	// 刻意不设 AEGIS_DB_DRIVER,验证默认值本身。
+	// 刻意不设 TWOFA_DB_DRIVER,验证默认值本身。
 	cfg, err := Load(env(prodBase(map[string]string{
-		"AEGIS_TOKEN_SECRET": strings.Repeat("a", 40),
+		"TWOFA_TOKEN_SECRET": strings.Repeat("a", 40),
 	})))
 	if err != nil {
 		t.Fatalf("合法生产配置应能加载: %v", err)
@@ -236,10 +236,10 @@ func TestProductionDefaultsToPostgres(t *testing.T) {
 // 注意:必须清掉连接串——带了连接串却不选 PG,属于配错,会打警告。
 func TestExplicitSQLiteAllowedInProduction(t *testing.T) {
 	cfg, err := Load(env(prodBase(map[string]string{
-		"AEGIS_TOKEN_SECRET": strings.Repeat("a", 40),
-		"AEGIS_DB_DRIVER":    "sqlite",
+		"TWOFA_TOKEN_SECRET": strings.Repeat("a", 40),
+		"TWOFA_DB_DRIVER":    "sqlite",
 		// 显式置空,覆盖基线里的连接串。
-		"AEGIS_DATABASE_URL": "",
+		"TWOFA_DATABASE_URL": "",
 	})))
 	if err != nil {
 		t.Fatalf("生产环境显式选 SQLite 应被允许: %v", err)
@@ -252,12 +252,12 @@ func TestExplicitSQLiteAllowedInProduction(t *testing.T) {
 // TestPostgresRequiresURL 确认选了 PG 就必须给连接串。
 func TestPostgresRequiresURL(t *testing.T) {
 	_, err := Load(env(devBase(map[string]string{
-		"AEGIS_DB_DRIVER": "postgres",
+		"TWOFA_DB_DRIVER": "postgres",
 	})))
 	if err == nil {
 		t.Fatal("PG 模式缺连接串应报错")
 	}
-	if !strings.Contains(err.Error(), "AEGIS_DATABASE_URL") {
+	if !strings.Contains(err.Error(), "TWOFA_DATABASE_URL") {
 		t.Errorf("报错应指明环境变量名, 得到 %q", err.Error())
 	}
 }
@@ -266,7 +266,7 @@ func TestPostgresRequiresURL(t *testing.T) {
 // 而不是静默回落——那会把生产数据写进本地文件。
 func TestUnknownDBDriverRejected(t *testing.T) {
 	_, err := Load(env(devBase(map[string]string{
-		"AEGIS_DB_DRIVER": "mysql",
+		"TWOFA_DB_DRIVER": "mysql",
 	})))
 	if err == nil {
 		t.Fatal("未知数据库类型应报错")
@@ -281,8 +281,8 @@ func TestUnknownDBDriverRejected(t *testing.T) {
 // 手写配置时 POSTGRES 与 postgres 混用很常见。
 func TestDBDriverCaseInsensitive(t *testing.T) {
 	cfg, err := Load(env(devBase(map[string]string{
-		"AEGIS_DB_DRIVER":    "PostGreS",
-		"AEGIS_DATABASE_URL": "postgres://u:p@h:5432/db",
+		"TWOFA_DB_DRIVER":    "PostGreS",
+		"TWOFA_DATABASE_URL": "postgres://u:p@h:5432/db",
 	})))
 	if err != nil {
 		t.Fatalf("加载失败: %v", err)
@@ -295,13 +295,13 @@ func TestDBDriverCaseInsensitive(t *testing.T) {
 // TestProductionPostgresWithoutURLFails 锁住生产环境的一条硬约束。
 func TestProductionPostgresWithoutURLFails(t *testing.T) {
 	_, err := Load(env(prodBase(map[string]string{
-		"AEGIS_TOKEN_SECRET": strings.Repeat("a", 40),
-		"AEGIS_DATABASE_URL": "", // 覆盖基线,模拟"忘了配连接串"
+		"TWOFA_TOKEN_SECRET": strings.Repeat("a", 40),
+		"TWOFA_DATABASE_URL": "", // 覆盖基线,模拟"忘了配连接串"
 	})))
 	if err == nil {
 		t.Fatal("生产环境未配数据库连接串应报错")
 	}
-	if !strings.Contains(err.Error(), "AEGIS_DATABASE_URL") {
+	if !strings.Contains(err.Error(), "TWOFA_DATABASE_URL") {
 		t.Errorf("报错应指明缺哪个变量, 得到 %q", err.Error())
 	}
 }

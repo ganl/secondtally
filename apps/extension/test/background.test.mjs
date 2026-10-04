@@ -38,7 +38,7 @@ async function loadBackground() {
     platform: 'browser',
     outfile,
     logLevel: 'silent',
-    alias: { '@aegis/core': resolve(root, 'packages/core/src/index.ts') },
+    alias: { '@twofa/core': resolve(root, 'packages/core/src/index.ts') },
   });
 
   const store = new Map();
@@ -96,7 +96,7 @@ async function fixture(t) {
   assert.equal(listeners.length, 1, '应注册恰好一个 onMessage 监听器');
   const call = makeCall(listeners);
   t.after(async () => {
-    await call({ type: 'aegis:lock' });
+    await call({ type: 'twofa:lock' });
   });
   return call;
 }
@@ -123,21 +123,21 @@ test('扩展后台:创建->锁定->解锁->验证码全流程', exclusive(async 
   const call = await fixture(t);
 
   // 初始:没有保险库
-  assert.deepEqual(await call({ type: 'aegis:hasVault' }), { ok: true, data: false });
+  assert.deepEqual(await call({ type: 'twofa:hasVault' }), { ok: true, data: false });
 
   // 创建
-  const created = await call({ type: 'aegis:create', password: 'corr3ct-horse-battery', confirm: 'corr3ct-horse-battery' });
+  const created = await call({ type: 'twofa:create', password: 'corr3ct-horse-battery', confirm: 'corr3ct-horse-battery' });
   assert.equal(created.ok, true, created.error);
   const codes = created.data.recoveryCodes;
   assert.equal(codes.length, 10, '恢复码应为10 条');
   assert.ok(codes.every((c) => typeof c === 'string' && c.length > 0));
 
   // 创建后应立即处于解锁态
-  assert.deepEqual(await call({ type: 'aegis:isUnlocked' }), { ok: true, data: true });
+  assert.deepEqual(await call({ type: 'twofa:isUnlocked' }), { ok: true, data: true });
 
   // 手动添加一个账号。RFC 4226 种子
   const added = await call({
-    type: 'aegis:addManual',
+    type: 'twofa:addManual',
     issuer: 'GitHub',
     account: 'alice@example.com',
     secret: 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ',
@@ -146,35 +146,35 @@ test('扩展后台:创建->锁定->解锁->验证码全流程', exclusive(async 
   const entryId = added.data.id;
 
   // 列出的验证码应为 6 位数字
-  const listed = await call({ type: 'aegis:list' });
+  const listed = await call({ type: 'twofa:list' });
   assert.equal(listed.ok, true);
   assert.equal(listed.data.length, 1);
   assert.equal(listed.data[0].issuer, 'GitHub');
   assert.match(listed.data[0].code, /^\d{6}$/);
 
   // 锁定后所有敏感操作必须失败
-  assert.deepEqual(await call({ type: 'aegis:lock' }), { ok: true });
-  assert.deepEqual(await call({ type: 'aegis:isUnlocked' }), { ok: true, data: false });
+  assert.deepEqual(await call({ type: 'twofa:lock' }), { ok: true });
+  assert.deepEqual(await call({ type: 'twofa:isUnlocked' }), { ok: true, data: false });
 
   for (const message of [
-    { type: 'aegis:list' },
-    { type: 'aegis:fillAll' },
-    { type: 'aegis:codeFor', host: 'github.com' },
-    { type: 'aegis:remove', id: entryId },
+    { type: 'twofa:list' },
+    { type: 'twofa:fillAll' },
+    { type: 'twofa:codeFor', host: 'github.com' },
+    { type: 'twofa:remove', id: entryId },
   ]) {
     const response = await call(message);
     assert.deepEqual(response, { ok: false, error: 'locked' }, `${message.type} 在锁定时必须被拒绝`);
   }
 
   // 错误密码不能解锁
-  const wrong = await call({ type: 'aegis:unlock', password: 'wrong-password-entirely' });
+  const wrong = await call({ type: 'twofa:unlock', password: 'wrong-password-entirely' });
   assert.equal(wrong.ok, false);
-  assert.deepEqual(await call({ type: 'aegis:isUnlocked' }), { ok: true, data: false });
+  assert.deepEqual(await call({ type: 'twofa:isUnlocked' }), { ok: true, data: false });
 
   // 正确密码解锁后,数据应当还在,且验证码与锁定前一致
-  const unlocked = await call({ type: 'aegis:unlock', password: 'corr3ct-horse-battery' });
+  const unlocked = await call({ type: 'twofa:unlock', password: 'corr3ct-horse-battery' });
   assert.equal(unlocked.ok, true, unlocked.error);
-  const relisted = await call({ type: 'aegis:list' });
+  const relisted = await call({ type: 'twofa:list' });
   assert.equal(relisted.data.length, 1);
   assert.equal(relisted.data[0].id, entryId, '解锁后条目 id 应保持一致');
   assert.equal(relisted.data[0].code, listed.data[0].code, '同一时间步内验证码应相同');
@@ -182,41 +182,41 @@ test('扩展后台:创建->锁定->解锁->验证码全流程', exclusive(async 
 
 test('扩展后台:按域名匹配验证码,且子域不误匹配', exclusive(async (t) => {
   const call = await fixture(t);
-  await call({ type: 'aegis:create', password: 'another-strong-passphrase', confirm: 'another-strong-passphrase' });
-  await call({ type: 'aegis:addManual', issuer: 'github.com', account: 'a', secret: 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ' });
+  await call({ type: 'twofa:create', password: 'another-strong-passphrase', confirm: 'another-strong-passphrase' });
+  await call({ type: 'twofa:addManual', issuer: 'github.com', account: 'a', secret: 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ' });
 
   // 精确匹配
-  const exact = await call({ type: 'aegis:codeFor', host: 'github.com' });
+  const exact = await call({ type: 'twofa:codeFor', host: 'github.com' });
   assert.equal(exact.ok, true);
   assert.ok(exact.data, 'github.com 应匹配到条目');
   assert.match(exact.data.code, /^\d{6}$/);
 
   // 子域也应匹配(登录可能走 gist.github.com 之类)
-  const sub = await call({ type: 'aegis:codeFor', host: 'gist.github.com' });
+  const sub = await call({ type: 'twofa:codeFor', host: 'gist.github.com' });
   assert.ok(sub.data, '子域应匹配');
 
   // 前缀相同但不同域不应误匹配
-  const spoof = await call({ type: 'aegis:codeFor', host: 'notgithub.com' });
+  const spoof = await call({ type: 'twofa:codeFor', host: 'notgithub.com' });
   assert.equal(spoof.data, null, 'notgithub.com 不应命中 github.com');
 
   // 无关域名返回 null
-  const other = await call({ type: 'aegis:codeFor', host: 'example.org' });
+  const other = await call({ type: 'twofa:codeFor', host: 'example.org' });
   assert.equal(other.data, null);
 }));
 
 test('扩展后台:未知请求被拒绝', exclusive(async (t) => {
   const call = await fixture(t);
-  const response = await call({ type: 'aegis:does-not-exist' });
+  const response = await call({ type: 'twofa:does-not-exist' });
   assert.equal(response.ok, false);
 }));
 
 test('扩展后台:非法种子被拒绝且不写入条目', exclusive(async (t) => {
   const call = await fixture(t);
-  await call({ type: 'aegis:create', password: 'third-strong-passphrase', confirm: 'third-strong-passphrase' });
+  await call({ type: 'twofa:create', password: 'third-strong-passphrase', confirm: 'third-strong-passphrase' });
 
   // 含非法字符的 Base32
   const bad = await call({
-    type: 'aegis:addManual',
+    type: 'twofa:addManual',
     issuer: 'Bad',
     account: 'x',
     secret: 'GEZDGNBVGY3TQOJQ1908!',
@@ -224,6 +224,6 @@ test('扩展后台:非法种子被拒绝且不写入条目', exclusive(async (t)
   assert.equal(bad.ok, false, '非法 Base32 必须被拒绝');
 
   // 拒绝后不能留下半成品条目
-  const listed = await call({ type: 'aegis:list' });
+  const listed = await call({ type: 'twofa:list' });
   assert.equal(listed.data.length, 0, '失败的添加不应留下条目');
 }));

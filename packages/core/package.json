@@ -1,5 +1,5 @@
 {
-  "name": "@aegis/core",
+  "name": "@twofa/core",
   "version": "0.1.0",
   "private": true,
   "type": "module",

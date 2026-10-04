@@ -15,7 +15,7 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
-      "@aegis/core": ["packages/core/src/index.ts"]
+      "@twofa/core": ["packages/core/src/index.ts"]
     }
   }
 }

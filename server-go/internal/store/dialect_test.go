@@ -146,7 +146,7 @@ func TestOpenPostgresRequiresDSN(t *testing.T) {
 	if err == nil {
 		t.Fatal("PG 模式缺连接串应报错")
 	}
-	if !strings.Contains(err.Error(), "AEGIS_DATABASE_URL") {
+	if !strings.Contains(err.Error(), "TWOFA_DATABASE_URL") {
 		t.Errorf("报错信息应指明环境变量名, 得到 %q", err.Error())
 	}
 }

@@ -20,7 +20,7 @@
 但攻击者可以删除数据、拒绝服务、或用伪造数据覆盖。
 所以备份与可用性仍然是你的责任,机密性不是。
 
-服务端的 `AEGIS_TOKEN_SECRET` 泄露后果:攻击者能伪造访问令牌、
+服务端的 `TWOFA_TOKEN_SECRET` 泄露后果:攻击者能伪造访问令牌、
 拉取任意用户的密文离线研究、或越权写入。**无法解密**,但必须保密。
 
 ## 一、服务端部署
@@ -30,8 +30,8 @@
 服务端是 **Go 实现**,构建产物是单个静态二进制,目标机器不需要装 Node。
 
 ```bash
-git clone <你的仓库> /opt/aegis
-cd /opt/aegis
+git clone <你的仓库> /opt/twofa
+cd /opt/twofa
 
 # 依赖:Go 1.22+ 与 Node 20+。
 # Node 只用于构建前端产物,服务端运行期不依赖它。
@@ -43,7 +43,7 @@ npm run build          # core / web / ext / server 全部构建
 
 | 路径 | 说明 |
 | --- | --- |
-| `server-go/dist/aegis-server` | **服务端二进制**(约 17 MB,Linux 版需自行 `GOOS=linux go build`) |
+| `server-go/dist/twofa-server` | **服务端二进制**(约 17 MB,Linux 版需自行 `GOOS=linux go build`) |
 | `apps/web/dist/` | Web 端静态文件 |
 | `apps/extension/dist/` | 浏览器扩展(手动加载,不部署) |
 | `apps/miniprogram/` | 微信小程序(用开发者工具打开) |
@@ -51,7 +51,7 @@ npm run build          # core / web / ext / server 全部构建
 只构建服务端:
 
 ```bash
-npm run build:server     # 等价于 cd server-go && go build -o dist/aegis-server ./cmd/aegis-server
+npm run build:server     # 等价于 cd server-go && go build -o dist/twofa-server ./cmd/twofa-server
 npm run test:server      # 跑 Go 测试
 ```
 
@@ -59,10 +59,10 @@ npm run test:server      # 跑 Go 测试
 > 设置连接串后才会真正执行:
 > ```bash
 > # 一次性起个本地实例
-> docker run -d --name aegis-pg -e POSTGRES_PASSWORD=postgres \
->   -e POSTGRES_DB=aegis_test -p 5433:5432 postgres:16
+> docker run -d --name twofa-pg -e POSTGRES_PASSWORD=postgres \
+>   -e POSTGRES_DB=twofa_test -p 5433:5432 postgres:16
 >
-> AEGIS_TEST_POSTGRES="postgres://postgres:postgres@127.0.0.1:5433/aegis_test?sslmode=disable" \
+> TWOFA_TEST_POSTGRES="postgres://postgres:postgres@127.0.0.1:5433/twofa_test?sslmode=disable" \
 >   npm run test:server
 > ```
 > 不这样设计的话,克隆下来没装数据库就跑不了测试。
@@ -71,13 +71,13 @@ npm run test:server      # 跑 Go 测试
 > `go env -w GOPROXY=https://goproxy.cn,https://mirrors.aliyun.com/goproxy/,direct`
 
 > **交叉编译**:部署到 Linux 服务器时在本地构建即可,
-> `GOOS=linux GOARCH=amd64 go build -o dist/aegis-server ./cmd/aegis-server`。
+> `GOOS=linux GOARCH=amd64 go build -o dist/twofa-server ./cmd/twofa-server`。
 > 项目使用纯 Go 驱动(`modernc.org/sqlite` 与 `github.com/lib/pq`),
 > **两种数据库都不需要 CGO**,交叉编译不需要额外的 C 工具链。
 
 ### 2. 选数据库
 
-服务端支持 SQLite 与 PostgreSQL,由 `AEGIS_DB_DRIVER` 决定。
+服务端支持 SQLite 与 PostgreSQL,由 `TWOFA_DB_DRIVER` 决定。
 
 | | SQLite | PostgreSQL |
 | --- | --- | --- |
@@ -85,9 +85,9 @@ npm run test:server      # 跑 Go 测试
 | 运维成本 | 单文件,零运维 | 需独立实例 |
 | 写并发 | 整库串行写 | 行级锁,并发写 |
 | 多实例 | 不支持(文件锁冲突) | 支持 |
-| 额外依赖 | 无 | `AEGIS_DATABASE_URL` |
+| 额外依赖 | 无 | `TWOFA_DATABASE_URL` |
 
-**默认值的选取规则**:`AEGIS_ENV=production` 时默认 `postgres`,
+**默认值的选取规则**:`TWOFA_ENV=production` 时默认 `postgres`,
 其余环境默认 `sqlite`。但**显式设置始终优先**——
 生产环境用 SQLite 是真实存在的合理场景(单机、不追求多实例),
 程序只负责把默认选对,不替你做这个决定。
@@ -96,26 +96,26 @@ npm run test:server      # 跑 Go 测试
 
 ```ini
 # 生产环境:PostgreSQL(推荐)
-AEGIS_ENV=production
-AEGIS_DB_DRIVER=postgres
-AEGIS_DATABASE_URL=postgres://aegis:密码@127.0.0.1:5432/aegis?sslmode=require
+TWOFA_ENV=production
+TWOFA_DB_DRIVER=postgres
+TWOFA_DATABASE_URL=postgres://twofa:密码@127.0.0.1:5432/twofa?sslmode=require
 ```
 
 ```ini
 # 单机小规模:SQLite
-AEGIS_ENV=production
-AEGIS_DB_DRIVER=sqlite
-AEGIS_DATA_DIR=/var/lib/aegis
+TWOFA_ENV=production
+TWOFA_DB_DRIVER=sqlite
+TWOFA_DATA_DIR=/var/lib/twofa
 ```
 
 建库与最小权限账号:
 
 ```sql
 -- 用 postgres 管理员账号执行
-CREATE ROLE aegis LOGIN PASSWORD '换成随机长密码';
-CREATE DATABASE aegis OWNER aegis;
+CREATE ROLE twofa LOGIN PASSWORD '换成随机长密码';
+CREATE DATABASE twofa OWNER twofa;
 -- 若应用与数据库不在同一台机器,再限制来源 IP:
--- ALTER ROLE aegis CONNECTION LIMIT 20;
+-- ALTER ROLE twofa CONNECTION LIMIT 20;
 ```
 
 `sslmode` 取值:
@@ -132,7 +132,7 @@ CREATE DATABASE aegis OWNER aegis;
 > **从 SQLite 迁移到 PostgreSQL**:密文是自描述的加密信封,
 > 与存储层无关,两个库的 `envelope` 列内容完全一致。迁移就是把
 > `vaults` 与 `sync_log` 两张表的数据搬过去,无需解密。
-> 记得同时把 `AEGIS_TOKEN_SECRET` 保持一致,否则已签发的令牌全部失效。
+> 记得同时把 `TWOFA_TOKEN_SECRET` 保持一致,否则已签发的令牌全部失效。
 
 ### 3. 配置
 
@@ -144,37 +144,37 @@ openssl rand -hex 32      # 生成令牌密钥
 编辑 `.env`,生产环境至少改这几项:
 
 ```ini
-AEGIS_ENV=production
+TWOFA_ENV=production
 HOST=127.0.0.1              # 只监听回环,由反代对外
-AEGIS_TOKEN_SECRET=<上面生成的值>
-AEGIS_ALLOWED_ORIGINS=https://2fa.example.com
+TWOFA_TOKEN_SECRET=<上面生成的值>
+TWOFA_ALLOWED_ORIGINS=https://2fa.example.com
 
 # 数据库二选一:
-AEGIS_DB_DRIVER=postgres
-AEGIS_DATABASE_URL=postgres://aegis:密码@127.0.0.1:5432/aegis?sslmode=require
-# AEGIS_DATA_DIR=/var/lib/aegis   # 仅 sqlite 模式需要
+TWOFA_DB_DRIVER=postgres
+TWOFA_DATABASE_URL=postgres://twofa:密码@127.0.0.1:5432/twofa?sslmode=require
+# TWOFA_DATA_DIR=/var/lib/twofa   # 仅 sqlite 模式需要
 ```
 
-`AEGIS_ALLOWED_ORIGINS` 必须写你的真实站点来源,不能留 `*`。
+`TWOFA_ALLOWED_ORIGINS` 必须写你的真实站点来源,不能留 `*`。
 生产环境若留通配,任何网站都能读取用户的同步接口。
 
-> `NODE_ENV` 作为兼容项保留(等价于 `AEGIS_ENV=production`),
+> `NODE_ENV` 作为兼容项保留(等价于 `TWOFA_ENV=production`),
 > 便于迁移期同一份 `.env` 供新旧两版共用。
 
 **启动即校验**——以下情况服务会直接退出而不是降级运行:
 
 | 情况 | 提示信息 |
 | --- | --- |
-| 缺 `AEGIS_TOKEN_SECRET` | 生产环境必须设置,附生成命令 |
+| 缺 `TWOFA_TOKEN_SECRET` | 生产环境必须设置,附生成命令 |
 | 用开发默认密钥 | 生产环境拒绝使用开发默认密钥 |
 | 密钥短于 32 字符 | 至少需要 32 个字符 |
 | CORS 含 `*` | 不允许通配符,请配置具体来源 |
 | CORS 无任何 `https://` 来源 | 生产环境要求 https |
-| 选了 `postgres` 但没给连接串 | 必须设置 `AEGIS_DATABASE_URL` |
-| `AEGIS_DB_DRIVER` 不是 sqlite/postgres | 报错并列出可选值 |
+| 选了 `postgres` 但没给连接串 | 必须设置 `TWOFA_DATABASE_URL` |
+| `TWOFA_DB_DRIVER` 不是 sqlite/postgres | 报错并列出可选值 |
 | PostgreSQL 连不上 | 打印底层错误后退出,不静默改用本地文件 |
 | `PORT` 不在 1–65535 | 端口非法 |
-| `AEGIS_TOKEN_TTL` 越界 | 必须在 60 到 2592000 秒之间 |
+| `TWOFA_TOKEN_TTL` 越界 | 必须在 60 到 2592000 秒之间 |
 
 > 最后一条尤其重要:数据库连不上时**绝不能**回落到 SQLite。
 > 那会把生产数据写进一个没人备份的本地文件,故障从"连不上库"
@@ -184,7 +184,7 @@ AEGIS_DATABASE_URL=postgres://aegis:密码@127.0.0.1:5432/aegis?sslmode=require
 
 ### 4. systemd 服务
 
-`/etc/systemd/system/aegis.service`:
+`/etc/systemd/system/twofa.service`:
 
 ```ini
 [Unit]
@@ -193,10 +193,10 @@ After=network.target
 
 [Service]
 Type=simple
-User=aegis
-Group=aegis
-WorkingDirectory=/opt/aegis
-ExecStart=/opt/aegis/server-go/dist/aegis-server
+User=twofa
+Group=twofa
+WorkingDirectory=/opt/twofa
+ExecStart=/opt/twofa/server-go/dist/twofa-server
 Restart=always
 RestartSec=3
 
@@ -210,35 +210,35 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/var/lib/aegis
+ReadWritePaths=/var/lib/twofa
 ProtectKernelTunables=true
 ProtectControlGroups=true
 # Go 运行时需要网络与文件系统,故未限制 AF_UNIX 之外更多族;
 # 若部署环境不需要 IPv6,可从下表去掉 AF_INET6。
 RestrictAddressFamilies=AF_INET AF_INET6
 
-EnvironmentFile=/opt/aegis/.env
+EnvironmentFile=/opt/twofa/.env
 
 [Install]
 WantedBy=multi-user.target
 ```
 
-> `ReadWritePaths=/var/lib/aegis` 在两种数据库模式下都要保留:
+> `ReadWritePaths=/var/lib/twofa` 在两种数据库模式下都要保留:
 > 即使走 PostgreSQL,`credentials.json` 仍写在这个目录里。
 > 去掉它服务会因无法写凭据而启动失败。
 
 ```bash
-sudo useradd --system --no-create-home --shell /usr/sbin/nologin aegis
-sudo mkdir -p /var/lib/aegis && sudo chown aegis:aegis /var/lib/aegis
+sudo useradd --system --no-create-home --shell /usr/sbin/nologin twofa
+sudo mkdir -p /var/lib/twofa && sudo chown twofa:twofa /var/lib/twofa
 sudo systemctl daemon-reload
-sudo systemctl enable --now aegis
-sudo systemctl status aegis
+sudo systemctl enable --now twofa
+sudo systemctl status twofa
 ```
 
 > **迁移提示**:旧的 Node 版数据目录是 `server/data/`,新版是 `server-go/data/`(默认值)。
 > 两者文件名相同(`vaults.db` 与 `credentials.json`),**可直接复制**——
 > scrypt 参数、令牌格式、数据库 schema 都保持了向后兼容。
-> 但 `AEGIS_TOKEN_SECRET` 必须一致,否则已签发的令牌全部失效,用户需重新登录。
+> 但 `TWOFA_TOKEN_SECRET` 必须一致,否则已签发的令牌全部失效,用户需重新登录。
 
 ### 5. Nginx 反代
 
@@ -262,7 +262,7 @@ server {
     }
 
     # Web 端静态文件
-    root /opt/aegis/apps/web/dist;
+    root /opt/twofa/apps/web/dist;
     index index.html;
     location / {
         try_files $uri $uri/ /index.html;
@@ -319,13 +319,13 @@ Web 端与扩展的同步地址则由用户在设置界面自己填,不需要改
 
 ```bash
 # 用 sqlite3 的在线备份,不会因正在写入而拿到损坏的副本
-sqlite3 /var/lib/aegis/vaults.db ".backup '/var/backups/aegis-$(date +%F).db'"
+sqlite3 /var/lib/twofa/vaults.db ".backup '/var/backups/twofa-$(date +%F).db'"
 
 # credentials.json 是普通文件,直接复制
-cp /var/lib/aegis/credentials.json "/var/backups/aegis-credentials-$(date +%F).json"
+cp /var/lib/twofa/credentials.json "/var/backups/twofa-credentials-$(date +%F).json"
 
 # 保留 30 天
-find /var/backups -name 'aegis-*' -mtime +30 -delete
+find /var/backups -name 'twofa-*' -mtime +30 -delete
 ```
 
 不要直接 `cp` 数据库文件:服务正在写入时可能拷到半写状态。
@@ -334,11 +334,11 @@ find /var/backups -name 'aegis-*' -mtime +30 -delete
 
 ```bash
 # 自定义格式,支持并行恢复与选择性还原
-pg_dump -Fc -U aegis -d aegis -f "/var/backups/aegis-$(date +%F).dump"
+pg_dump -Fc -U twofa -d twofa -f "/var/backups/twofa-$(date +%F).dump"
 
-cp /var/lib/aegis/credentials.json "/var/backups/aegis-credentials-$(date +%F).json"
+cp /var/lib/twofa/credentials.json "/var/backups/twofa-credentials-$(date +%F).json"
 
-find /var/backups -name 'aegis-*' -mtime +30 -delete
+find /var/backups -name 'twofa-*' -mtime +30 -delete
 ```
 
 用 `pg_dump` 而不是直接拷数据目录:数据目录拷出来**很可能无法直接恢复**,
@@ -347,10 +347,10 @@ find /var/backups -name 'aegis-*' -mtime +30 -delete
 恢复演练(建议每季度做一次,不然后出事才发现备份是坏的):
 
 ```bash
-createdb -U aegis aegis_restore_test
-pg_restore -U aegis -d aegis_restore_test --no-owner "/var/backups/aegis-2026-10-03.dump"
-psql -U aegis -d aegis_restore_test -c "SELECT count(*) FROM vaults;"
-dropdb -U aegis aegis_restore_test
+createdb -U twofa twofa_restore_test
+pg_restore -U twofa -d twofa_restore_test --no-owner "/var/backups/twofa-2026-10-03.dump"
+psql -U twofa -d twofa_restore_test -c "SELECT count(*) FROM vaults;"
+dropdb -U twofa twofa_restore_test
 ```
 
 ### 数据规模
@@ -394,7 +394,7 @@ curl -fsS http://127.0.0.1:8787/ready    # 依赖就绪
 服务用 `console.log` 输出到 stdout,由 systemd 收集:
 
 ```bash
-journalctl -u aegis -f
+journalctl -u twofa -f
 ```
 
 `sync_log` 表只记元数据(设备名、版本、字节数、时间),
@@ -402,7 +402,7 @@ journalctl -u aegis -f
 
 ### 密钥轮换
 
-轮换 `AEGIS_TOKEN_SECRET` 会让所有已签发的访问令牌立即失效,
+轮换 `TWOFA_TOKEN_SECRET` 会让所有已签发的访问令牌立即失效,
 客户端会在下次同步时自动重新登录(要求用户重新输入主密码,保险库才能解密)。
 选低峰期操作即可。**轮换不会影响数据**,密文不依赖它。
 
@@ -415,21 +415,21 @@ journalctl -u aegis -f
 **启动报 "PostgreSQL 不可用"**
 按可能性排序排查:
 
-1. `AEGIS_DATABASE_URL` 的 host/port 与实际实例是否一致
+1. `TWOFA_DATABASE_URL` 的 host/port 与实际实例是否一致
 2. `sslmode` 是否与实例配置匹配(自建实例通常用 `require`,不是 `verify-full`)
 3. 账号密码是否正确,以及该账号是否有 `CONNECT` 权限
 4. 实例的 `pg_hba.conf` 是否放行了应用服务器的 IP
 5. 实例的 `max_connections` 是否已被打满
 
 服务启动时就会 `Ping` 一次,连不上直接退出,**不会**静默改用本地文件。
-用 `psql "postgres://aegis:密码@127.0.0.1:5432/aegis?sslmode=require" -c "SELECT 1"`
+用 `psql "postgres://twofa:密码@127.0.0.1:5432/twofa?sslmode=require" -c "SELECT 1"`
 先确认连接串本身通不通,再回来看服务日志。
 
 **想把生产库换成 PostgreSQL**
 密文信封是自描述的,与存储层无关,直接搬两张表的数据即可,无需解密。
 先在 sqlite 模式下 `sqlite3 vaults.db .dump` 看一眼表结构,
 再到 PG 里建同样的表(`BIGSERIAL` 替 `AUTOINCREMENT`),
-然后导数据。迁移期间 `AEGIS_TOKEN_SECRET` 必须保持一致。
+然后导数据。迁移期间 `TWOFA_TOKEN_SECRET` 必须保持一致。
 
 **提示"云端数据无法用当前主密码解密"**
 两端主密码不同。端到端加密的必然结果——服务端没有能力帮你解决,

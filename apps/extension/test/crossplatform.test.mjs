@@ -126,10 +126,10 @@ test('Web 产物 main.js 能加载且 core 已被内联', async (t) => {
   }
   const source = await readFile(mainPath, 'utf8');
 
-  // 产物必须是自包含的:不能残留 @aegis/core 这类裸模块说明符
+  // 产物必须是自包含的:不能残留 @twofa/core 这类裸模块说明符
   assert.ok(
-    !/from\s*["']@aegis\/core["']/.test(source),
-    '产物中不应残留 @aegis/core 裸导入',
+    !/from\s*["']@twofa\/core["']/.test(source),
+    '产物中不应残留 @twofa/core 裸导入',
   );
   // noble 的 PBKDF2 必须在里面(加密逻辑已内联)
   assert.ok(source.includes('pbkdf2'), '产物中应含 PBKDF2 实现');

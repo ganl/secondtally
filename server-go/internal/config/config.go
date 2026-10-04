@@ -58,16 +58,16 @@ type Getenv func(string) string
 // 返回错误时调用方必须直接退出——不要降级到"部分可用"的状态,
 // 那意味着用户以为自己在安全配置下运行。
 func Load(getenv Getenv) (*Config, error) {
-	// 优先读 AEGIS_ENV(语义清晰),兼容 NODE_ENV。
+	// 优先读 TWOFA_ENV(语义清晰),兼容 NODE_ENV。
 	// 支持后者是因为同一份 .env 要能被 Node 版与 Go 版共用,
 	// 迁移期间不必改环境变量名。
-	isProduction := getenv("AEGIS_ENV") == "production" || getenv("NODE_ENV") == "production"
+	isProduction := getenv("TWOFA_ENV") == "production" || getenv("NODE_ENV") == "production"
 
-	tokenSecret := strings.TrimSpace(getenv("AEGIS_TOKEN_SECRET"))
+	tokenSecret := strings.TrimSpace(getenv("TWOFA_TOKEN_SECRET"))
 	if tokenSecret == "" {
 		if isProduction {
 			return nil, fmt.Errorf(
-				"生产环境必须设置 AEGIS_TOKEN_SECRET,生成方式: openssl rand -hex 32")
+				"生产环境必须设置 TWOFA_TOKEN_SECRET,生成方式: openssl rand -hex 32")
 		}
 		// 开发环境回退到固定值,但它必须在下面被生产校验拒绝。
 		tokenSecret = devSecret
@@ -78,11 +78,11 @@ func Load(getenv Getenv) (*Config, error) {
 			return nil, fmt.Errorf("生产环境拒绝使用开发默认密钥")
 		}
 		if len(tokenSecret) < minSecretLength {
-			return nil, fmt.Errorf("生产环境的 AEGIS_TOKEN_SECRET 至少需要 %d 个字符", minSecretLength)
+			return nil, fmt.Errorf("生产环境的 TWOFA_TOKEN_SECRET 至少需要 %d 个字符", minSecretLength)
 		}
 	}
 
-	origins := splitAndTrim(getenv("AEGIS_ALLOWED_ORIGINS"))
+	origins := splitAndTrim(getenv("TWOFA_ALLOWED_ORIGINS"))
 	if len(origins) == 0 {
 		origins = []string{"http://localhost:5173", "http://127.0.0.1:5173"}
 	}
@@ -105,15 +105,15 @@ func Load(getenv Getenv) (*Config, error) {
 		return nil, fmt.Errorf("PORT 必须是 1-65535 之间的数字")
 	}
 
-	ttlSecs, err := strconv.Atoi(getenvDefault(getenv, "AEGIS_TOKEN_TTL", strconv.Itoa(defaultTTLSecs)))
+	ttlSecs, err := strconv.Atoi(getenvDefault(getenv, "TWOFA_TOKEN_TTL", strconv.Itoa(defaultTTLSecs)))
 	if err != nil || ttlSecs < 60 || ttlSecs > 30*24*3600 {
-		return nil, fmt.Errorf("AEGIS_TOKEN_TTL 必须是 60 到 %d 秒之间的数字", 30*24*3600)
+		return nil, fmt.Errorf("TWOFA_TOKEN_TTL 必须是 60 到 %d 秒之间的数字", 30*24*3600)
 	}
 
-	dataDir := getenvDefault(getenv, "AEGIS_DATA_DIR", defaultDataDir)
+	dataDir := getenvDefault(getenv, "TWOFA_DATA_DIR", defaultDataDir)
 	absData, err := filepath.Abs(dataDir)
 	if err != nil {
-		return nil, fmt.Errorf("AEGIS_DATA_DIR 不是合法路径: %w", err)
+		return nil, fmt.Errorf("TWOFA_DATA_DIR 不是合法路径: %w", err)
 	}
 
 	// 数据库类型。
@@ -122,27 +122,27 @@ func Load(getenv Getenv) (*Config, error) {
 	// 用户量上来或上多实例后必然成为瓶颈。
 	// 开发与测试环境默认 SQLite:免装数据库,一条命令就能跑。
 	//
-	// 显式设置 AEGIS_DB_DRIVER 时始终以它为准——
+	// 显式设置 TWOFA_DB_DRIVER 时始终以它为准——
 	// 允许生产环境用 SQLite,因为"单机小规模部署"是真实存在的场景,
 	// 不该由程序替用户做这个决定,只该把默认选对并给出警告。
-	dbDriver := strings.ToLower(getenvDefault(getenv, "AEGIS_DB_DRIVER", defaultDBDriverFor(isProduction)))
+	dbDriver := strings.ToLower(getenvDefault(getenv, "TWOFA_DB_DRIVER", defaultDBDriverFor(isProduction)))
 	switch dbDriver {
 	case "sqlite", "postgres":
 	default:
-		return nil, fmt.Errorf("AEGIS_DB_DRIVER 只能是 sqlite 或 postgres,得到 %q", dbDriver)
+		return nil, fmt.Errorf("TWOFA_DB_DRIVER 只能是 sqlite 或 postgres,得到 %q", dbDriver)
 	}
 
-	databaseURL := strings.TrimSpace(getenv("AEGIS_DATABASE_URL"))
+	databaseURL := strings.TrimSpace(getenv("TWOFA_DATABASE_URL"))
 	if dbDriver == "postgres" && databaseURL == "" {
 		return nil, fmt.Errorf(
-			"AEGIS_DB_DRIVER=postgres 时必须设置 AEGIS_DATABASE_URL," +
-				"形如 postgres://user:pass@host:5432/aegis?sslmode=require")
+			"TWOFA_DB_DRIVER=postgres 时必须设置 TWOFA_DATABASE_URL," +
+				"形如 postgres://user:pass@host:5432/twofa?sslmode=require")
 	}
 	if dbDriver == "sqlite" && isProduction && databaseURL != "" {
 		// 不算错误,但几乎肯定是配错了——生产环境用 SQLite 等于放弃了并发能力。
 		// 这里只提示,因为确实存在"单机小规模部署先用 SQLite"的合理场景。
 		fmt.Fprintf(os.Stderr,
-			"警告:检测到 AEGIS_DATABASE_URL 但 AEGIS_DB_DRIVER=sqlite,该连接串不会被使用\n")
+			"警告:检测到 TWOFA_DATABASE_URL 但 TWOFA_DB_DRIVER=sqlite,该连接串不会被使用\n")
 	}
 
 	return &Config{

@@ -35,7 +35,7 @@ await build({
   define: { 'process.env.NODE_ENV': '"production"' },
   // 直接指向 core 源码而不是 dist:与小程序构建保持一致,
   // 避免改了 core 之后忘了重跑 build:core 而打出旧代码
-  alias: { '@aegis/core': resolve(root, 'packages/core/src/index.ts') },
+  alias: { '@twofa/core': resolve(root, 'packages/core/src/index.ts') },
 });
 
 await copyFile(resolve(webDir, 'styles.css'), resolve(distDir, 'styles.css'));

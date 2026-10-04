@@ -21,7 +21,7 @@ import type {
   Scanner,
   Clipboard,
   CryptoRandom,
-} from '@aegis/core';
+} from '@twofa/core';
 
 const STORAGE_PREFIX = 'aegis.ext.v1.';
 

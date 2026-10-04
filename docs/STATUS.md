@@ -29,10 +29,10 @@
 迁移要点:
 - 数据目录从 `server/data/` 变为 `server-go/data/`,两个文件名相同
   (`vaults.db` / `credentials.json`),**可直接复制**
-- 但 `AEGIS_TOKEN_SECRET` 必须一致,否则已签发令牌全部失效
-- 环境变量 `AEGIS_ENV`(新)优先,`NODE_ENV`(旧)保留为兼容项
+- 但 `TWOFA_TOKEN_SECRET` 必须一致,否则已签发令牌全部失效
+- 环境变量 `TWOFA_ENV`(新)优先,`NODE_ENV`(旧)保留为兼容项
 
-构建产物:`server-go/dist/aegis-server`,约 17 MB,纯 Go SQLite 驱动,
+构建产物:`server-go/dist/twofa-server`,约 17 MB,纯 Go SQLite 驱动,
 **无需 CGO**,可交叉编译。
 
 ---
@@ -63,15 +63,15 @@
 | 层 | 内容 | 可否改名 |
 | --- | --- | --- |
 | 用户可见层 | 小程序标题栏、Web `<title>`/H1、扩展商店名、页面 H1、推广文案 | **必须改** |
-| 代码标识符层 | `aegis-2fa`、`@aegis/core`、`aegis/server`、二进制名、`window.aegis` | 可改,约 50 处机械替换 |
+| 代码标识符层 | `twofa-2fa`、`@twofa/core`、`twofa/server`、二进制名、`window.twofa` | 可改,约 50 处机械替换 |
 | 数据契约层 | `aegis.vault.v1`、`aegis.lock.v1`、`aegis.device.v1` | **改名 = 用户丢数据** |
 
 **第二层的连带风险(改前必须知道):**
 
-- Go module 路径 `aegis/server/internal/*` 共 11 处 import,需同时改目录名与 `go.mod`。
-- npm 包名 `@aegis/core` 等 3 处,改后必须重新`mklink /J` 重建 workspace 链接
+- Go module 路径 `twofa/server/internal/*` 共 11 处 import,需同时改目录名与 `go.mod`。
+- npm 包名 `@twofa/core` 等 3 处,改后必须重新`mklink /J` 重建 workspace 链接
   (Windows 下 `ln -s` 需管理员权限,此前已踩过)。
-- 测试断言中 30 处 `window.aegis`,`grep -c` 逐文件确认。
+- 测试断言中 30 处 `window.twofa`,`grep -c` 逐文件确认。
 
 **第三层为何不能动:**该键下存的是用户设备上唯一的加密保险库。
 主密码不上传,云端无明文,**键名一改 = 读不出旧保险库 = 数据永久丢失**。
@@ -82,7 +82,7 @@
 - 存储键**仅在 `packages/core/src/vault/service.ts:45-47` 集中定义**三处常量,
   全部引用都走变量,无字面量散落。
 - `packages/core/test/` 与 `apps/extension/test/` 中**无任何存储键字面量断言**
-  (`grep -rn "aegis\."` 返回空)。
+  (`grep -rn "twofa\."` 返回空)。
 - 结论:因项目仅一个提交、未真实部署,现在改零代价;但必须**先改完再合入**,
   一旦有用户落盘就永久锁死。
 

@@ -1,5 +1,5 @@
 {
-  "name": "aegis-2fa",
+  "name": "twofa",
   "version": "0.1.0",
   "private": true,
   "description": "端到端加密的 TOTP 双重认证器,支持微信小程序 / Web / 浏览器扩展跨端",
@@ -15,13 +15,13 @@
     "build:miniprogram": "node scripts/build-miniprogram.mjs",
     "build:web": "node scripts/build-web.mjs",
     "build:ext": "node scripts/build-ext.mjs",
-    "build:server": "cd server-go && go build -o dist/aegis-server ./cmd/aegis-server",
+    "build:server": "cd server-go && go build -o dist/twofa-server ./cmd/twofa-server",
     "build": "npm run build:core && npm run build:miniprogram && npm run build:web && npm run build:ext && npm run build:server",
     "test": "node --test packages/core/test/*.test.mjs apps/extension/test/*.test.mjs",
     "test:server": "cd server-go && go test ./... -count=1",
     "typecheck": "tsc -p packages/core/tsconfig.json --noEmit && tsc -p apps/miniprogram/tsconfig.json --noEmit",
-    "dev:server": "go run ./server-go/cmd/aegis-server",
-    "start:server": "./server-go/dist/aegis-server"
+    "dev:server": "go run ./server-go/cmd/twofa-server",
+    "start:server": "./server-go/dist/twofa-server"
   },
   "devDependencies": {
     "esbuild": "^0.24.0",

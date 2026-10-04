@@ -21,9 +21,9 @@ import (
 	"sync"
 	"time"
 
-	"aegis/server/internal/auth"
-	"aegis/server/internal/config"
-	"aegis/server/internal/store"
+	"twofa/server/internal/auth"
+	"twofa/server/internal/config"
+	"twofa/server/internal/store"
 )
 
 // maxBodyBytes 是请求体上限。保险库密文远小于此,2MB 足够宽裕。

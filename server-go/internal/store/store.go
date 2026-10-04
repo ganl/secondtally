@@ -88,7 +88,7 @@ type Options struct {
 	// SQLitePath 是 SQLite 数据库文件路径,仅 DialectSQLite 时使用。
 	SQLitePath string
 	// PostgresDSN 是 PostgreSQL 连接串,仅 DialectPostgres 时使用。
-	// 形如 postgres://user:pass@host:5432/aegis?sslmode=require
+	// 形如 postgres://user:pass@host:5432/twofa?sslmode=require
 	PostgresDSN string
 }
 
@@ -150,7 +150,7 @@ func openSQLite(path string) (*Repository, error) {
 // openPostgres 打开 PostgreSQL。
 func openPostgres(dsn string) (*Repository, error) {
 	if dsn == "" {
-		return nil, errors.New("PostgreSQL 模式必须设置 AEGIS_DATABASE_URL")
+		return nil, errors.New("PostgreSQL 模式必须设置 TWOFA_DATABASE_URL")
 	}
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
@@ -168,7 +168,7 @@ func openPostgres(dsn string) (*Repository, error) {
 
 	if err := db.Ping(); err != nil {
 		_ = db.Close()
-		return nil, fmt.Errorf("PostgreSQL 不可用(检查 AEGIS_DATABASE_URL 与网络): %w", err)
+		return nil, fmt.Errorf("PostgreSQL 不可用(检查 TWOFA_DATABASE_URL 与网络): %w", err)
 	}
 
 	repo := newRepository(db, DialectPostgres)

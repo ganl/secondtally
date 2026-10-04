@@ -130,7 +130,7 @@ interface FillResponse {
 
 async function fetchCodes(): Promise<CodePayload[]> {
   try {
-    const response = (await chrome.runtime.sendMessage({ type: 'aegis:fillAll' })) as FillResponse;
+    const response = (await chrome.runtime.sendMessage({ type: 'twofa:fillAll' })) as FillResponse;
     return response.ok && Array.isArray(response.data) ? response.data : [];
   } catch {
     // 后台 service worker 可能正在重启,静默失败即可,下一次观察会重试
@@ -174,7 +174,7 @@ function start(): void {
 
   chrome.runtime.onMessage.addListener((msg, _sender, respond) => {
     const type = (msg as { type?: string } | null)?.type;
-    if (type !== 'aegis:page:fill') return false;
+    if (type !== 'twofa:page:fill') return false;
     tryFill()
       .then((ok) => respond({ ok }))
       .catch(() => respond({ ok: false }));

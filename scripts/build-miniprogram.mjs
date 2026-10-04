@@ -29,7 +29,7 @@ await build({
   logLevel: 'info',
 });
 
-// 2. 打包 platform.ts(它 import 了 @aegis/core,需要把 core 一起打进去)
+// 2. 打包 platform.ts(它 import 了 @twofa/core,需要把 core 一起打进去)
 await build({
   entryPoints: [resolve(miniDir, 'platform.ts')],
   bundle: true,
@@ -69,7 +69,7 @@ export * from '../../packages/core/src/index.js';
 );
 
 // platform.mjs 同理:运行时是 bundle,类型回指 platform.ts。
-// platform.ts 本身 import type from '@aegis/core',故依赖 workspace 链接。
+// platform.ts 本身 import type from '@twofa/core',故依赖 workspace 链接。
 // 用 .d.ts 而非 .d.mts:配对的 .mjs 会被 tsc 当作 JS 优先解析,
 // .d.mts 声明被忽略,报出"has no exported member"。
 await writeFile(

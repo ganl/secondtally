@@ -20,7 +20,7 @@ import {
   type Scanner,
   type Clipboard,
   type CryptoRandom,
-} from '@aegis/core';
+} from '@twofa/core';
 
 const STORAGE_PREFIX = 'aegis.web.v1.';
 
@@ -137,7 +137,7 @@ export interface WebApp {
 
 declare global {
   interface Window {
-    aegis: WebApp;
+    twofa: WebApp;
   }
 }
 
@@ -240,7 +240,7 @@ export async function bootstrap(): Promise<WebApp> {
     },
   };
 
-  window.aegis = app;
+  window.twofa = app;
   return app;
 }
 

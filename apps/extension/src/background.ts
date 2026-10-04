@@ -17,7 +17,7 @@
  * 4. 锁定状态下对任何请求都拒绝响应,不做"静默失败"。
  */
 
-import { VaultService, type RandomSource } from '@aegis/core';
+import { VaultService, type RandomSource } from '@twofa/core';
 import { createExtensionPlatform } from './platform.js';
 
 const LOCK_AFTER_MS = 5 * 60 * 1000;
@@ -101,45 +101,45 @@ async function lockNow(): Promise<void> {
 }
 
 type Request =
-  | { type: 'aegis:hasVault' }
-  | { type: 'aegis:isUnlocked' }
-  | { type: 'aegis:create'; password: string; confirm: string }
-  | { type: 'aegis:unlock'; password: string }
-  | { type: 'aegis:lock' }
-  | { type: 'aegis:list' }
-  | { type: 'aegis:addManual'; issuer: string; account: string; secret: string; digits?: number; period?: number; algorithm?: string }
-  | { type: 'aegis:remove'; id: string }
-  | { type: 'aegis:codeFor'; host: string }
-  | { type: 'aegis:fillAll' };
+  | { type: 'twofa:hasVault' }
+  | { type: 'twofa:isUnlocked' }
+  | { type: 'twofa:create'; password: string; confirm: string }
+  | { type: 'twofa:unlock'; password: string }
+  | { type: 'twofa:lock' }
+  | { type: 'twofa:list' }
+  | { type: 'twofa:addManual'; issuer: string; account: string; secret: string; digits?: number; period?: number; algorithm?: string }
+  | { type: 'twofa:remove'; id: string }
+  | { type: 'twofa:codeFor'; host: string }
+  | { type: 'twofa:fillAll' };
 
 async function handle(request: Request): Promise<{ ok: boolean; data?: unknown; error?: string }> {
   const vault = await getVault();
 
   switch (request.type) {
-    case 'aegis:hasVault':
+    case 'twofa:hasVault':
       return { ok: true, data: await vault.hasVault() };
 
-    case 'aegis:isUnlocked':
+    case 'twofa:isUnlocked':
       return { ok: true, data: (await activeVault()) !== null };
 
-    case 'aegis:create': {
+    case 'twofa:create': {
       const codes = await vault.create(request.password, request.confirm);
       session = { vault, unlockAt: Date.now() };
       // 恢复码只在此刻返回一次,弹窗负责展示;之后无法再取回
       return { ok: true, data: { recoveryCodes: codes } };
     }
 
-    case 'aegis:unlock': {
+    case 'twofa:unlock': {
       await vault.unlock(request.password);
       session = { vault, unlockAt: Date.now() };
       return { ok: true };
     }
 
-    case 'aegis:lock':
+    case 'twofa:lock':
       await lockNow();
       return { ok: true };
 
-    case 'aegis:list': {
+    case 'twofa:list': {
       const active = await activeVault();
       if (!active) return { ok: false, error: 'locked' };
       const codes = active.generateAllCodes();
@@ -155,7 +155,7 @@ async function handle(request: Request): Promise<{ ok: boolean; data?: unknown; 
       };
     }
 
-    case 'aegis:addManual': {
+    case 'twofa:addManual': {
       const active = await activeVault();
       if (!active) return { ok: false, error: 'locked' };
       const entry = await active.addManual({
@@ -169,14 +169,14 @@ async function handle(request: Request): Promise<{ ok: boolean; data?: unknown; 
       return { ok: true, data: { id: entry.id } };
     }
 
-    case 'aegis:remove': {
+    case 'twofa:remove': {
       const active = await activeVault();
       if (!active) return { ok: false, error: 'locked' };
       await active.removeEntry(request.id);
       return { ok: true };
     }
 
-    case 'aegis:codeFor': {
+    case 'twofa:codeFor': {
       const active = await activeVault();
       if (!active) return { ok: false, error: 'locked' };
       // 按域名匹配:取最长后缀匹配,避免 example.com 命中 aexample.com
@@ -196,7 +196,7 @@ async function handle(request: Request): Promise<{ ok: boolean; data?: unknown; 
       return { ok: true, data: best };
     }
 
-    case 'aegis:fillAll': {
+    case 'twofa:fillAll': {
       const active = await activeVault();
       if (!active) return { ok: false, error: 'locked' };
       return {

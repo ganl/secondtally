@@ -9,7 +9,7 @@
 //   internal/store   密文存储(SQLite)
 //   internal/httpapi 路由、CORS、限流
 //   internal/config  启动配置与校验
-module aegis/server
+module twofa/server
 
 go 1.26.0
 

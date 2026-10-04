@@ -27,7 +27,7 @@ const shared = {
   sourcemap: false,
   logLevel: 'info',
   // 指向 core 源码而非 dist,避免改了 core 忘重跑 build:core
-  alias: { '@aegis/core': resolve(root, 'packages/core/src/index.ts') },
+  alias: { '@twofa/core': resolve(root, 'packages/core/src/index.ts') },
   define: { 'process.env.NODE_ENV': '"production"' },
 };
 

@@ -123,7 +123,7 @@ Page({
     try {
       const raw = await vault.exportVault();
       // 写到临时文件,让用户通过"文件"分享出去
-      const filePath = `${wx.env.USER_DATA_PATH}/aegis-vault.json`;
+      const filePath = `${wx.env.USER_DATA_PATH}/twofa-vault.json`;
       const fs = wx.getFileSystemManager();
       fs.writeFileSync(filePath, raw, 'utf8');
       wx.showShareMenu({ menus: ['shareFileMessage'] });

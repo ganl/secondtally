@@ -103,7 +103,7 @@ type Service struct {
 // 这是"静默降级",在生产上的代价极高。
 func New(dataFile, tokenSecret string) (*Service, error) {
 	if strings.TrimSpace(tokenSecret) == "" {
-		return nil, errors.New("缺少令牌签名密钥 AEGIS_TOKEN_SECRET")
+		return nil, errors.New("缺少令牌签名密钥 TWOFA_TOKEN_SECRET")
 	}
 	s := &Service{
 		dataFile:          dataFile,
@@ -473,7 +473,7 @@ func (s *Service) pairLocked(userID string) (*TokenPair, error) {
 }
 
 // defaultAccessTTL 是 refresh() 内部签发访问令牌时使用的有效期。
-// 与配置项AEGIS_TOKEN_TTL 一致;refresh 端点由上层覆盖为配置值。
+// 与配置项TWOFA_TOKEN_TTL 一致;refresh 端点由上层覆盖为配置值。
 const defaultAccessTTL = time.Hour
 
 // Logout 吊销该用户全部刷新令牌。

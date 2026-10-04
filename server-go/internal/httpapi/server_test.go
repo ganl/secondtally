@@ -14,9 +14,9 @@ import (
 	"testing"
 	"time"
 
-	"aegis/server/internal/auth"
-	"aegis/server/internal/config"
-	"aegis/server/internal/store"
+	"twofa/server/internal/auth"
+	"twofa/server/internal/config"
+	"twofa/server/internal/store"
 )
 
 func newTestServer(t *testing.T) (*httptest.Server, *store.Repository) {
