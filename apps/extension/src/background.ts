@@ -21,7 +21,7 @@ import { VaultService, type RandomSource } from '@twofa/core';
 import { createExtensionPlatform } from './platform.js';
 
 const LOCK_AFTER_MS = 5 * 60 * 1000;
-const STORAGE_PREFIX = 'aegis.ext.v1.';
+const STORAGE_PREFIX = 'twofa.ext.v1.';
 
 declare const chrome: {
   storage: {

@@ -3,7 +3,7 @@
   "miniprogramRoot": "./",
   "compileType": "miniprogram",
   "appid": "请替换为你的小程序AppID",
-  "projectname": "twofa-2fa",
+  "projectname": "twofa",
   "setting": {
     "urlCheck": false,
     "es6": true,

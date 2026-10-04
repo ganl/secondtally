@@ -63,8 +63,8 @@
 | 层 | 内容 | 可否改名 |
 | --- | --- | --- |
 | 用户可见层 | 小程序标题栏、Web `<title>`/H1、扩展商店名、页面 H1、推广文案 | **必须改** |
-| 代码标识符层 | `twofa-2fa`、`@twofa/core`、`twofa/server`、二进制名、`window.twofa` | 可改,约 50 处机械替换 |
-| 数据契约层 | `aegis.vault.v1`、`aegis.lock.v1`、`aegis.device.v1` | **改名 = 用户丢数据** |
+| 代码标识符层 | `twofa`、`@twofa/core`、`twofa/server`、二进制名、`window.twofa` | **已改**(2026-10-04) |
+| 数据契约层 | `twofa.vault.v1`、`twofa.lock.v1`、`twofa.device.v1` | **已剥离品牌名**(同上);发布后冻结 |
 
 **第二层的连带风险(改前必须知道):**
 

@@ -136,16 +136,20 @@ Privacy Guides(被广泛引用的 2FA 推荐源)对桌面验证器的态度是�
 | 层          | 内容                                                                                             | 可否改名           | 理由               |
 | ---------- | ---------------------------------------------------------------------------------------------- | -------------- | ---------------- |
 | **用户可见层**  | 小程序标题栏、Web `<title>`/H1、扩展商店名、页面 H1、推广文案                                                       | **必须改**        | 唯一影响用户认知与推广效率    |
-| **代码标识符层** | `aegis-2fa`、`@aegis/core`、Go module `aegis/server`、二进制名、`window.aegis`                         | 可改             | 纯内部命名,约 50 处机械替换 |
-| **数据契约层**  | `aegis.vault.v1`、`aegis.lock.v1`、`aegis.device.id.v1`、`aegis.device.name.v1`、`aegis.session.*` | **改名 = 用户丢数据** | 见下               |
+| **代码标识符层** | 包名 `@twofa/core`、Go module `twofa/server`、二进制名、`window.twofa`、`TWOFA_*` 环境变量             | **已改**(2026-10-04) | 纯内部命名,机械替换     |
+| **数据契约层**  | `twofa.vault.v1`、`twofa.lock.v1`、`twofa.device.id.v1`、`twofa.device.name.v1`、`twofa.session.*` | **已剥离品牌名**(同上) | 见下               |
 
-### 数据契约层为何绝对不能动
+### 数据契约层为何不能动(以及"不能动"从哪一刻开始)
+
+> 2026-10-04 补充:本节论述的是**发布后**的约束。产品尚未上线、
+> 无外部用户数据,故前缀已于当日从 `aegis.` 剥离为 `twofa.`,
+> 详见《已执行》一节。**从发布那一刻起,下面的约束才真正生效。**
 
 这些键下存的是用户设备上**唯一的加密保险库**与**唯一的登录凭据**。  
 本项目是端到端加密模型:主密码不上传,服务端无明文。**键名一改,旧保险库就读不出来,  
 数据永久丢失——没有找回通道,这是 E2E 的必然结果,不是可以"兼容迁移"的问题。**
 
-其中 `aegis.session.*` 存的是同步服务的访问令牌与刷新令牌,  
+其中 `twofa.session.*` 存的是同步服务的访问令牌与刷新令牌,  
 改名等于让所有已登录设备静默掉线。
 
 ### 2.1 关键修正:原稿的键清单不完整,且这个错误已造成安全缺陷
@@ -160,12 +164,12 @@ Privacy Guides(被广泛引用的 2FA 推荐源)对桌面验证器的态度是�
 
 | 键                                   | 定义位置                                                              | 原稿是否列出        |
 | ----------------------------------- | ----------------------------------------------------------------- | ------------- |
-| `aegis.vault.v1`                    | `packages/core/src/vault/service.ts:45`                           | ✅             |
-| `aegis.lock.v1`                     | `packages/core/src/vault/service.ts:47`                           | ✅             |
-| `aegis.device.id.v1`                | `apps/miniprogram/platform.ts:97`                                 | ❌ 漏           |
-| `aegis.device.name.v1`              | `apps/miniprogram/platform.ts:98`                                 | ❌ 漏           |
-| `aegis.session.<account>`           | `apps/miniprogram/app.ts:85,92,95`(三处字面量拼接)                       | ❌ **漏,且危害最大** |
-| `aegis.web.v1.*` / `aegis.ext.v1.*` | `apps/web/src/platform.ts:25`、`apps/extension/src/platform.ts:26` | ❌ 漏           |
+| `twofa.vault.v1`                    | `packages/core/src/vault/service.ts:45`                           | ✅             |
+| `twofa.lock.v1`                     | `packages/core/src/vault/service.ts:47`                           | ✅             |
+| `twofa.device.id.v1`                | `apps/miniprogram/platform.ts:97`                                 | ❌ 漏           |
+| `twofa.device.name.v1`              | `apps/miniprogram/platform.ts:98`                                 | ❌ 漏           |
+| `twofa.session.<account>`           | `apps/miniprogram/app.ts:85,92,95`(三处字面量拼接)                       | ❌ **漏,且危害最大** |
+| `twofa.web.v1.*` / `twofa.ext.v1.*` | `apps/web/src/platform.ts:25`、`apps/extension/src/platform.ts:26` | ❌ 漏           |
 
 **这个漏项不是文档瑕疵,它已经在产品里造成了一个真实缺陷。**
 
@@ -173,30 +177,30 @@ Privacy Guides(被广泛引用的 2FA 推荐源)对桌面验证器的态度是�
 
 ```ts
 // apps/miniprogram/pages/settings/index.ts(修复前)
-const keys = ['aegis.vault.v1', 'aegis.lock.v1', 'aegis.device.id.v1'];
+const keys = ['twofa.vault.v1', 'twofa.lock.v1', 'twofa.device.id.v1'];
 for (const key of keys) wx.removeStorageSync(key);
 ```
 
-**漏掉了 `aegis.session.*`。** 后果:用户点了"我确定,清空"、看到"已清空"、  
+**漏掉了 `twofa.session.*`。** 后果:用户点了"我确定,清空"、看到"已清空"、  
 应用跳回门禁页,但**同步服务的登录态仍然留在 `wx.storage` 里**——  
 刷新令牌未失效、访问令牌未清除。在这个项目里这是格外严重的失误,  
 因为服务端设计了**刷新令牌重放即吊销全部刷新令牌**的防护,  
 而用户已经明确表达了"我要删除全部数据"的意愿,却没有真正做到。
 
-设备名 `aegis.device.name.v1` 同样被漏掉,清空后仍会显示旧设备名。
+设备名 `twofa.device.name.v1` 同样被漏掉,清空后仍会显示旧设备名。
 
 **已修复**,方式是把键收敛到单一命名空间常量并按前缀全清:
 
-- `apps/miniprogram/platform.ts` 新增 `STORAGE_NAMESPACE = 'aegis.'`、  
+- `apps/miniprogram/platform.ts` 新增 `STORAGE_NAMESPACE = 'twofa.'`、  
   `sessionKey(accountName)`、`wipeAllStorage()`(按前缀全清,不再列举键名)
 - `apps/miniprogram/app.ts` 三处会话键拼接改为调用 `sessionKey()`
 - `apps/miniprogram/pages/settings/index.ts` 清空逻辑改为调用 `wipeAllStorage()`
 - `packages/core/src/vault/service.ts` 删除死代码 `DEVICE_KEY`  
-  (它写的是 `aegis.device.v1`,与小程序实际用的 `aegis.device.id.v1` 不一致,  
+  (它写的是 `twofa.device.v1`,与小程序实际用的 `twofa.device.id.v1` 不一致,  
   且全项目无任何引用——留着只会误导下一个人)
 
 **这次修复带来一个额外收益:今后改名不再需要逐个追键。**  
-新增任何以 `aegis.` 开头的键,都会被"清空本机数据"自动覆盖,  
+新增任何以 `twofa.` 开头的键,都会被"清空本机数据"自动覆盖,  
 不会再出现"加了个功能,忘了同步维护清空列表"这类漏项。
 
 ### 仍然成立的窗口期判断
@@ -208,23 +212,35 @@ for (const key of keys) wx.removeStorageSync(key);
 已核实:**两个提交(`f002702` 首版、`014fcec` Go 服务端),无真实部署,  
 无外部用户数据。** 这是剥离品牌前缀的唯一安全窗口。
 
-### 建议:顺势剥离品牌前缀
+### 已执行:存储键前缀剥离品牌名(2026-10-04)
 
-把存储键从中性的契约名重新命名,例如:
+用户拍板:**A 级可以改,产品还没发布上线。** 窗口期判断成立,
+七族键已从 `aegis.*` 换成 `twofa.*`。
 
-| 现在                        | 建议                               |
-| ------------------------- | -------------------------------- |
-| `aegis.vault.v1`          | `aegis.vault.v1` 保留,或 `vault.v1` |
-| `aegis.lock.v1`           | 同上                               |
-| `aegis.device.id.v1`      | `device.id.v1`                   |
-| `aegis.device.name.v1`    | `device.name.v1`                 |
-| `aegis.session.<account>` | `session.<account>`              |
-| `aegis.web.v1.*`          | `web.v1.*`                       |
-| `aegis.ext.v1.*`          | `ext.v1.*`                       |
+| 旧键                        | 新键                     |
+| ------------------------- | ---------------------- |
+| `aegis.vault.v1`          | `twofa.vault.v1`       |
+| `aegis.lock.v1`           | `twofa.lock.v1`         |
+| `aegis.device.id.v1`      | `twofa.device.id.v1`    |
+| `aegis.device.name.v1`    | `twofa.device.name.v1`  |
+| `aegis.session.<account>` | `twofa.session.<account>` |
+| `aegis.web.v1.*`          | `twofa.web.v1.*`        |
+| `aegis.ext.v1.*`          | `twofa.ext.v1.*`        |
 
-**注意:这只在"现在"做才安全。** 且 `aegis.` 前缀已在  
-`apps/miniprogram/platform.ts` 收敛为单一常量,剥离时改一处即可 ——  
-但小程序**已经落过盘**的键仍需按上表逐个迁移(本次尚未剥离,见 §九)。
+**为什么是 `twofa.` 而不是干脆去掉前缀(原建议的 `vault.v1`)** ——
+原建议漏了一个约束:**Web 端的 `localStorage` 是按来源(origin)共享的。**
+同一个域名下的任何页面都能读写它。去掉前缀意味着 `vault.v1` 这种
+泛泛的键名可能与其他页面撞车,而且"清空本机数据"按前缀匹配时
+会把别人的键一起删掉。小程序与扩展的存储是隔离的,但 Web 不是,
+所以前缀必须保留,只是换掉其中的品牌部分。
+
+`twofa.` 描述的是应用品类而非品牌,主名将来换成什么都不必再改 ——
+这正是剥离的目的。**发布后此处即永久冻结。**
+
+配套加了一条测试 `packages/core/test/storage-keys.test.mjs`:
+三端各自硬编码一份前缀,没有任何编译器检查,某一端漏改不会报错,
+只在用户换设备同步时表现为"数据读不出来"。测试把 7 处钉死,
+并用变异验证过(故意改坏 Web 端前缀,测试确实失败)。
 
 ### 改代码标识符层的连带成本
 
@@ -612,7 +628,7 @@ for (const key of keys) wx.removeStorageSync(key);
 
 **已完成(2026-10-03,先于定名,因为它与改名无关且是安全缺陷):**
 
-- [x] 修复小程序"清空本机数据"漏清 `aegis.session.*` 的缺陷(见 §2.1)
+- [x] 修复小程序"清空本机数据"漏清 `twofa.session.*` 的缺陷(见 §2.1)
 - [x] 存储键收敛到 `STORAGE_NAMESPACE` 单一常量,新增 `wipeAllStorage()`
 - [x] 删除 `packages/core/src/vault/service.ts` 中误导性死代码 `DEVICE_KEY`
 - [x] `npm run build` 补入漏掉的 `build:miniprogram`(此前小程序 bundle 不随 build 更新)

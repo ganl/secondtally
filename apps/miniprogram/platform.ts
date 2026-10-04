@@ -105,7 +105,9 @@ export function createCryptoRandom(): CryptoRandom {
  * 用户以为清空了,登录态其实还在。
  * 前缀匹配让"新增一个键"不再需要同步维护清空列表。
  */
-export const STORAGE_NAMESPACE = 'aegis.';
+// 中性前缀:描述应用品类而非品牌,主名将来换成什么都不必改这里。
+// 但发布后即冻结——改前缀等于让已落盘的保险库永久无法读取。
+export const STORAGE_NAMESPACE = 'twofa.';
 
 /** 会话键:按账户名分桶,存的是登录态(含 refreshToken)。 */
 const SESSION_KEY_PREFIX = `${STORAGE_NAMESPACE}session.`;

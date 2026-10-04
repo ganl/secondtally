@@ -43,13 +43,15 @@ import { timingSafeEqual } from '../crypto/primitives.js';
 import type { SyncTransport, RemoteRecord } from '../adapters/platform.js';
 
 // 存储键:core 只认这两个。设备标识由各端平台层自行管理
-// (小程序用 aegis.device.id.v1),不归 core 管。
+// (小程序用 twofa.device.id.v1),不归 core 管。
 //
-// 这两个键名是数据格式契约,不是品牌标识——
-// 改它们等于让已落盘的保险库永久无法读取(E2E 模型下无找回通道)。
-// 换品牌名时不要动这里。
-const STORAGE_KEY = 'aegis.vault.v1';
-const LOCK_KEY = 'aegis.lock.v1';
+// 这是数据格式契约,不是品牌标识。前缀 twofa. 是刻意选的**中性**前缀:
+// 它描述的是应用品类而非品牌,所以将来主名换成什么都不必碰这里。
+//
+// 但反过来——前缀一旦定下就再也不能改。改了等于让已落盘的保险库
+// 永久无法读取(E2E 模型下无找回通道)。产品发布后此处即冻结。
+const STORAGE_KEY = 'twofa.vault.v1';
+const LOCK_KEY = 'twofa.lock.v1';
 
 export interface VaultState {
   /** 是否已解锁。 */

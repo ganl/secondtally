@@ -23,7 +23,7 @@ import type {
   CryptoRandom,
 } from '@twofa/core';
 
-const STORAGE_PREFIX = 'aegis.ext.v1.';
+const STORAGE_PREFIX = 'twofa.ext.v1.';
 
 /**
  * chrome.storage 的最小类型声明。

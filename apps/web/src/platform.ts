@@ -22,7 +22,7 @@ import {
   type CryptoRandom,
 } from '@twofa/core';
 
-const STORAGE_PREFIX = 'aegis.web.v1.';
+const STORAGE_PREFIX = 'twofa.web.v1.';
 
 function createStore(): KeyValueStore {
   return {

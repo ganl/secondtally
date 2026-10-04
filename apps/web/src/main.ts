@@ -675,7 +675,7 @@ function renderSettingsModal() {
     if (!confirm('这会永久删除本机保险库与恢复码。由于主密码不会上传,若无其他副本则无法找回。确定?')) return;
     if (!confirm('最后确认:真的要删除全部数据吗?此操作无法撤销。')) return;
     for (const key of Object.keys(localStorage)) {
-      if (key.startsWith('aegis.web.v1.')) localStorage.removeItem(key);
+      if (key.startsWith('twofa.web.v1.')) localStorage.removeItem(key);
     }
     location.reload();
   });
